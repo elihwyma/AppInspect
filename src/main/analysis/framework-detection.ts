@@ -54,8 +54,15 @@ export function detectAppFrameworks(appBundlePath: string, linkedLibs: string[] 
 		detected.push("Flutter");
 	}
 
-	// Cordova
-	if (hasFile("www/index.html") && !hasFramework("Capacitor.framework")) {
+	// Cordova (often coexists with Capacitor via compat layer, so strong
+	// signals report even when Capacitor is present)
+	if (
+		hasAnyFramework("Cordova.framework", "CordovaPlugins.framework") ||
+		hasFile("config.xml") ||
+		hasFile("www/cordova.js") ||
+		hasFile("public/cordova.js") ||
+		(hasFile("www/index.html") && !hasFramework("Capacitor.framework"))
+	) {
 		detected.push("Cordova");
 	}
 
