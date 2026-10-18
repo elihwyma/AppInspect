@@ -45,11 +45,13 @@ export function isInsideAny(roots: readonly string[], target: string): boolean {
 }
 
 /**
- * Walk an extracted tree and report whether any symlink resolves outside
- * `root`. Broken symlinks are treated as unsafe. Returns false for trees
- * without escaping symlinks (the normal case).
+ * Walk an extracted tree and delete every symlink whose target resolves
+ * outside `root` (broken links included). Neutralises archive-supplied links
+ * so no later read can follow them out of the extraction directory, while
+ * keeping the (otherwise valid) tree available for analysis.
+ * Returns the number of symlinks removed.
  */
-export function hasEscapingSymlink(root: string): boolean {
+export function removeEscapingSymlinks(root: string): number {
 	// Resolve the root through its own real path so that a symlinked ancestor
 	// (e.g. macOS `/tmp` -> `/private/tmp`) does not make every in-tree symlink
 	// look like it escapes.
@@ -60,6 +62,7 @@ export function hasEscapingSymlink(root: string): boolean {
 		resolvedRoot = path.resolve(root);
 	}
 	const stack: string[] = [resolvedRoot];
+	let removed = 0;
 
 	while (stack.length > 0) {
 		const dir = stack.pop()!;
@@ -73,11 +76,27 @@ export function hasEscapingSymlink(root: string): boolean {
 		for (const entry of entries) {
 			const full = path.join(dir, entry.name);
 			if (entry.isSymbolicLink()) {
+				let target: string | null = null;
 				try {
-					const real = fs.realpathSync(full);
-					if (!isInside(resolvedRoot, real)) return true;
+					target = fs.realpathSync(full);
 				} catch {
-					return true; // broken symlink
+					/* broken symlink — treated like an escaping one */
+				}
+				if (target === null || !isInside(resolvedRoot, target)) {
+					try {
+						fs.unlinkSync(full);
+						removed++;
+					} catch {
+						/* best-effort; keep the walk going */
+					}
+				} else {
+					// In-tree link: descend if it points at a directory, so links
+					// inside symlinked directories are checked too.
+					try {
+						if (fs.statSync(target).isDirectory()) stack.push(target);
+					} catch {
+						/* vanished mid-walk; ignore */
+					}
 				}
 			} else if (entry.isDirectory()) {
 				stack.push(full);
@@ -85,5 +104,5 @@ export function hasEscapingSymlink(root: string): boolean {
 		}
 	}
 
-	return false;
+	return removed;
 }

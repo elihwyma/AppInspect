@@ -141,7 +141,9 @@ function getSectionData(cached: AnalysisResult, section: SectionName): unknown {
 		case "classes":
 			return { classes: cached.classes, protocols: cached.protocols ?? [] };
 		case "entitlements": {
-			const obj: Record<string, unknown> = {};
+			// Null prototype: keys come from an untrusted plist inside the
+			// analysed binary, so "__proto__" must not be the setter.
+			const obj: Record<string, unknown> = Object.create(null);
 			if (Array.isArray(cached.entitlements)) {
 				for (const e of cached.entitlements) obj[e.key] = e.value;
 			}

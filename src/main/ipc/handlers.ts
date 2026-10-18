@@ -183,7 +183,9 @@ export function registerIPCHandlers(win: BrowserWindow): void {
 						}
 					});
 				case "entitlements": {
-					const entObj: Record<string, unknown> = {};
+					// Null prototype: keys come from an untrusted plist inside the
+					// analysed binary, so "__proto__" must not be the setter.
+					const entObj: Record<string, unknown> = Object.create(null);
 					if (Array.isArray(cached.entitlements)) {
 						for (const e of cached.entitlements) entObj[e.key] = e.value;
 					}
