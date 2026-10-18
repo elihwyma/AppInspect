@@ -27,11 +27,21 @@ function createWindow(): BrowserWindow {
 		webPreferences: {
 			preload: path.join(APP_ROOT, "dist/preload/index.js"),
 			contextIsolation: true,
-			nodeIntegration: false
+			nodeIntegration: false,
+			sandbox: true,
+			webSecurity: true
 		}
 	});
 
 	win.loadFile(path.join(APP_ROOT, "src/renderer/index.html"));
+
+	win.webContents.on("will-navigate", (event, url) => {
+		if (url !== win.webContents.getURL()) event.preventDefault();
+	});
+	win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+	win.webContents.on("will-attach-webview", (event) => {
+		event.preventDefault();
+	});
 
 	win.once("ready-to-show", () => {
 		win.maximize();
