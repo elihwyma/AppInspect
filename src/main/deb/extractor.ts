@@ -17,6 +17,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { DEBControlInfo } from "../../shared/types";
 import { isMachOFile } from "../parser/macho";
+import { safeJoin } from "../util/safe-path";
 
 export interface DEBBinaryInfo {
 	name: string;
@@ -64,6 +65,11 @@ function parseARMembers(buf: Buffer): ARMember[] {
 			.replace(/\/$/, "");
 		const sizeStr = buf.toString("ascii", pos + 48, pos + 58).trim();
 		const endMarker = buf.toString("ascii", pos + 58, pos + 60);
+
+		// Debian member names are flat: reject separators and traversal outright.
+		if (name === "" || name.includes("/") || name.includes("\\") || name.includes("..")) {
+			break; // Unsafe member name, stop
+		}
 
 		if (endMarker !== "`\n") {
 			break; // Invalid header, stop
@@ -257,7 +263,10 @@ export async function extractDEB(
 		if (!alreadyExtracted) {
 			// Write each member to disk
 			for (const member of members) {
-				const outPath = path.join(tempDir, member.name);
+				const outPath = safeJoin(tempDir, member.name);
+				if (!outPath) {
+					return { success: false, error: `Unsafe path in .deb archive: ${member.name}` };
+				}
 				fs.writeFileSync(outPath, buf.subarray(member.offset, member.offset + member.size));
 			}
 
@@ -267,7 +276,10 @@ export async function extractDEB(
 				return { success: false, error: "No data.tar member found in .deb archive" };
 			}
 
-			const dataTarPath = path.join(tempDir, dataMember.name);
+			const dataTarPath = safeJoin(tempDir, dataMember.name);
+			if (!dataTarPath) {
+				return { success: false, error: "Unsafe path in .deb archive" };
+			}
 			try {
 				await extractTar(dataTarPath, dataDir);
 			} catch (err) {
@@ -288,30 +300,34 @@ export async function extractDEB(
 
 		if (controlMember) {
 			// Write the control tar if it's not on disk yet
-			const controlTarPath = path.join(tempDir, controlMember.name);
-			if (!fs.existsSync(controlTarPath)) {
+			const controlTarPath = safeJoin(tempDir, controlMember.name);
+			if (controlTarPath && !fs.existsSync(controlTarPath)) {
 				fs.writeFileSync(
 					controlTarPath,
 					buf.subarray(controlMember.offset, controlMember.offset + controlMember.size)
 				);
 			}
-			const controlDir = path.join(tempDir, "control-extracted");
-			try {
-				await extractTar(controlTarPath, controlDir);
-				// control file may be at root or in ./ prefix
-				const controlFilePath = fs.existsSync(path.join(controlDir, "control"))
-					? path.join(controlDir, "control")
-					: fs.existsSync(path.join(controlDir, ".", "control"))
-						? path.join(controlDir, ".", "control")
-						: null;
 
-				if (controlFilePath) {
-					control = parseControlFile(fs.readFileSync(controlFilePath, "utf-8"));
+			// An unsafe member name means we cannot parse control metadata (non-fatal).
+			if (controlTarPath) {
+				const controlDir = path.join(tempDir, "control-extracted");
+				try {
+					await extractTar(controlTarPath, controlDir);
+					// control file may be at root or in ./ prefix
+					const controlFilePath = fs.existsSync(path.join(controlDir, "control"))
+						? path.join(controlDir, "control")
+						: fs.existsSync(path.join(controlDir, ".", "control"))
+							? path.join(controlDir, ".", "control")
+							: null;
+
+					if (controlFilePath) {
+						control = parseControlFile(fs.readFileSync(controlFilePath, "utf-8"));
+					}
+				} catch (err) {
+					// Non-fatal: we can still analyse binaries without control metadata
+					const msg = err instanceof Error ? err.message : String(err);
+					console.warn(`[DEB] Failed to parse control: ${msg}`);
 				}
-			} catch (err) {
-				// Non-fatal: we can still analyse binaries without control metadata
-				const msg = err instanceof Error ? err.message : String(err);
-				console.warn(`[DEB] Failed to parse control: ${msg}`);
 			}
 		}
 
