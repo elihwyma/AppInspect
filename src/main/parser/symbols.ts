@@ -93,7 +93,7 @@ export function parseSymbolTable(
 ): SymbolEntry[] {
 	if (!symtabInfo) return [];
 
-	const { symoff, nsyms, stroff, strsize } = symtabInfo;
+	const { symoff, nsyms, stroff } = symtabInfo;
 	if (nsyms === 0) return [];
 
 	const view = new DataView(buffer);
@@ -110,7 +110,8 @@ export function parseSymbolTable(
 		const n_strx = view.getUint32(entryOffset, le);
 		const n_type = view.getUint8(entryOffset + 4);
 		const n_sect = view.getUint8(entryOffset + 5);
-		const n_desc = view.getInt16(entryOffset + 6, le);
+		// n_desc (+6, int16) is the library ordinal for imported symbols. It is a
+		// real nlist field but SymbolEntry does not carry it yet, so it is skipped.
 		const n_value = is64Bit
 			? view.getBigUint64(entryOffset + 8, le)
 			: BigInt(view.getUint32(entryOffset + 8, le));

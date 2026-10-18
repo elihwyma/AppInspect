@@ -217,86 +217,12 @@ function decodeLDR64(insn: number): { rt: number; rn: number; offset: number } |
 	return { rt, rn, offset: imm12 << 3 };
 }
 
-// ── ARM32 / THUMB-2 instruction decoding ─────────────────────────────
-
-/**
- * Decode ARM32 LDR Rd, [PC, #imm] - PC-relative literal load.
- * This is the most common pattern for loading string addresses.
- * Note: ARM32 PC is instruction address + 8 (pipeline).
- */
-function decodeARM32_LDR_PC(insn: number, pc: bigint): { rd: number; target: bigint } | null {
-	// Pattern: cond 01 0 P U 0 W 1 1111 Rd [imm12]
-	// For LDR with PC base (Rn=15): bits[19:16] = 1111
-	// cond=AL (1110), P=1, W=0, L=1
-	// Check: 1110 01 0 1 U 0 0 1 1111 Rd [imm12]
-	if ((insn & 0x0f7f0000) !== 0x051f0000) return null;
-
-	const rd = (insn >>> 12) & 0xf;
-	const imm12 = insn & 0xfff;
-	const isAdd = (insn >>> 23) & 1;
-
-	// ARM32 PC is instruction address + 8
-	const effectivePC = pc + 8n;
-	const offset = isAdd ? BigInt(imm12) : -BigInt(imm12);
-
-	return { rd, target: effectivePC + offset };
-}
-
-/**
- * Decode ARM32 ADR (ADD/SUB Rd, PC, #imm).
- * Used for PC-relative address calculation.
- */
-function decodeARM32_ADR(insn: number, pc: bigint): { rd: number; target: bigint } | null {
-	// ADD Rd, PC, #imm: 1110 00 1 0100 0 1111 Rd [rotate][imm8]
-	// SUB Rd, PC, #imm: 1110 00 1 0010 0 1111 Rd [rotate][imm8]
-	const isADD = (insn & 0x0fef0000) === 0x028f0000;
-	const isSUB = (insn & 0x0fef0000) === 0x024f0000;
-	if (!isADD && !isSUB) return null;
-
-	const rd = (insn >>> 12) & 0xf;
-	const rotate = (insn >>> 8) & 0xf;
-	const imm8 = insn & 0xff;
-
-	// ARM32 rotated immediate: imm8 ROR (rotate * 2)
-	const rotateAmount = rotate * 2;
-	const immediate =
-		rotateAmount === 0 ? imm8 : ((imm8 >>> rotateAmount) | (imm8 << (32 - rotateAmount))) >>> 0;
-
-	const effectivePC = pc + 8n;
-	const offset = isADD ? BigInt(immediate) : -BigInt(immediate);
-
-	return { rd, target: effectivePC + offset };
-}
-
-/**
- * Decode ARM32 MOVW Rd, #imm16 (load low 16 bits).
- */
-function decodeARM32_MOVW(insn: number): { rd: number; imm16: number } | null {
-	// Encoding: 1110 0011 0000 [imm4] [Rd] [imm12]
-	if ((insn & 0x0ff00000) !== 0x03000000) return null;
-
-	const rd = (insn >>> 12) & 0xf;
-	const imm4 = (insn >>> 16) & 0xf;
-	const imm12 = insn & 0xfff;
-	const imm16 = (imm4 << 12) | imm12;
-
-	return { rd, imm16 };
-}
-
-/**
- * Decode ARM32 MOVT Rd, #imm16 (load high 16 bits).
- */
-function decodeARM32_MOVT(insn: number): { rd: number; imm16: number } | null {
-	// Encoding: 1110 0011 0100 [imm4] [Rd] [imm12]
-	if ((insn & 0x0ff00000) !== 0x03400000) return null;
-
-	const rd = (insn >>> 12) & 0xf;
-	const imm4 = (insn >>> 16) & 0xf;
-	const imm12 = insn & 0xfff;
-	const imm16 = (imm4 << 12) | imm12;
-
-	return { rd, imm16 };
-}
+// ── THUMB / THUMB-2 instruction decoding ─────────────────────────────
+//
+// Only THUMB encodings are decoded. Real armv7 iOS binaries run almost entirely
+// in Thumb state (function-start addresses carry the interworking bit 0), so
+// ARM32 A32-only forms such as LDR Rd,[PC,#imm] and MOVW/MOVT pairs are not
+// handled. Adding them means decoding A32 4-byte-wide instructions here.
 
 /**
  * Decode THUMB-2 LDR.W Rt, [PC, #imm] - 32-bit PC-relative load.
@@ -490,11 +416,9 @@ function vmaddrToStringFileOffset(
 	return null;
 }
 
-// CFString struct sizes:
-// 64-bit: isa(8) + flags(8) + data_ptr(8) + length(8) = 32 bytes
-// 32-bit: isa(4) + flags(4) + data_ptr(4) + length(4) = 16 bytes
-const CFSTRING_STRUCT_SIZE_64 = 32;
-const CFSTRING_STRUCT_SIZE_32 = 16;
+// CFString struct layout. data_ptr sits after isa and flags:
+// 64-bit: isa(8) + flags(8) -> data_ptr at 16 (struct is 32 bytes)
+// 32-bit: isa(4) + flags(4) -> data_ptr at 8  (struct is 16 bytes)
 const CFSTRING_DATA_OFFSET_64 = 16;
 const CFSTRING_DATA_OFFSET_32 = 8;
 
@@ -753,12 +677,13 @@ function scanARM64(ctx: XrefContext): void {
 	}
 }
 
-// ── ARM32 / THUMB-2 scanner ──────────────────────────────────────────
+// ── ARM32 (Thumb state) scanner ───────────────────────────────────────
 
 /**
- * Scan ARM32 / THUMB-2 code for string references.
- * Most iOS 32-bit binaries use THUMB-2, so we primarily scan for THUMB patterns.
- * The function start addresses have bit 0 set for THUMB code (Thumb interworking).
+ * Scan ARM32 code for string references, decoding only the THUMB / THUMB-2
+ * instruction forms listed above. A32-only encodings are not handled.
+ * Most iOS 32-bit binaries run in Thumb state, and function start addresses
+ * carry the interworking bit 0, which is what this scanner assumes.
  */
 function scanARM32(ctx: XrefContext): void {
 	const { view, littleEndian, textSection, buffer } = ctx;
@@ -899,7 +824,7 @@ function scanX86(ctx: XrefContext): void {
  *
  * Dispatches to architecture-specific scanners based on CPU type:
  *   - ARM64: ADRP+ADD, ADRP+LDR, ADR patterns
- *   - ARM32/THUMB: LDR [PC], MOVW+MOVT patterns
+ *   - ARM32 (Thumb): LDR [PC], MOVW+MOVT patterns
  *   - x86_64: Same as ARM64 (RIP-relative addressing is similar)
  *   - x86: Absolute addressing patterns
  */

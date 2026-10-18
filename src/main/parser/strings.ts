@@ -234,8 +234,8 @@ function parseCFStrings(
  * Extract strings from well-known Mach-O sections.
  *
  * @param buffer       The full Mach-O file buffer
- * @param sections     Flattened array of Section64 (convenience, but we also
- *                     look inside segments[].sections[])
+ * @param _sections    Unused; sections are read from segments[].sections[].
+ *                     Kept to preserve the existing call signature.
  * @param segments     Parsed LC_SEGMENT_64 entries
  * @param rebaseMap    Chained fixups rebase map (file offset -> resolved vmaddr)
  * @param littleEndian Byte order
@@ -244,7 +244,7 @@ function parseCFStrings(
  */
 export function extractStrings(
 	buffer: ArrayBuffer,
-	sections: Section64[],
+	_sections: Section64[],
 	segments: Segment64[],
 	rebaseMap: Map<number, bigint>,
 	littleEndian: boolean,

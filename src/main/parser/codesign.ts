@@ -99,11 +99,7 @@ function parseEntitlementsBlob(
  * Parse the code directory blob (magic 0xFADE0C02).
  * Extracts version, flags, hash info, and optionally teamID.
  */
-function parseCodeDirectoryBlob(
-	view: DataView,
-	blobStart: number,
-	blobMaxLen: number
-): CodeDirectory | null {
+function parseCodeDirectoryBlob(view: DataView, blobStart: number): CodeDirectory | null {
 	const magic = view.getUint32(blobStart, false);
 	if (magic !== CS_MAGIC_CODEDIRECTORY) {
 		return null;
@@ -191,7 +187,6 @@ export function parseCodeSignature(
 		};
 	}
 
-	const _length = view.getUint32(csOffset + 4, false);
 	const count = view.getUint32(csOffset + 8, false);
 
 	// Read BlobIndex entries
@@ -228,7 +223,7 @@ export function parseCodeSignature(
 			}
 
 			case CS_SLOT_CODEDIRECTORY: {
-				const cd = parseCodeDirectoryBlob(view, blobAbsOffset, blobMaxLen);
+				const cd = parseCodeDirectoryBlob(view, blobAbsOffset);
 				if (cd) {
 					result.codeDirectory = cd;
 				}

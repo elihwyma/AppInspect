@@ -313,7 +313,6 @@ class GraphRenderer {
 
 	// Tooltip debounce
 	private tooltipTimer: ReturnType<typeof setTimeout> | null = null;
-	private tooltipNode: LayoutNode | null = null;
 
 	// Event listener cleanup
 	private boundMouseMove: (ev: MouseEvent) => void;
@@ -567,7 +566,6 @@ class GraphRenderer {
 
 	private scheduleTooltip(nd: LayoutNode): void {
 		this.cancelTooltip();
-		this.tooltipNode = nd;
 		this.tooltipTimer = setTimeout(() => {
 			// Don't show while dragging or panning
 			if (this.dragNode || this.isPanning) return;
@@ -580,7 +578,6 @@ class GraphRenderer {
 			clearTimeout(this.tooltipTimer);
 			this.tooltipTimer = null;
 		}
-		this.tooltipNode = null;
 		this.tooltip.classList.add("hidden");
 	}
 

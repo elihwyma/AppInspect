@@ -1,0 +1,8 @@
+# Bun configuration
+#
+# `root` scopes file discovery. Without it, `bun test` walks the whole
+# directory tree and picks up compiled *.test.js files that `bun run build`
+# has left in dist/ -- stale copies that still pass green long after the
+# TypeScript sources they were built from have changed.
+[test]
+root = "src"

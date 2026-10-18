@@ -1,7 +1,7 @@
 // Renderer entry point
 /// <reference path="./global.d.ts" />
 
-import type { AnalysisResult, AppSettings, BinaryInfo } from "../shared/types";
+import type { AnalysisResult, BinaryInfo } from "../shared/types";
 import { showToast } from "./components/toast";
 import {
 	addFileTab as addFileTabToBar,

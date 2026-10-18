@@ -4,31 +4,19 @@
 
 import { describe, expect, it } from "bun:test";
 import {
-	type BuildVersionCommand,
-	type DylibCommand,
-	type EncryptionInfo64,
-	LC_BUILD_VERSION,
 	LC_CODE_SIGNATURE,
 	LC_DYLD_CHAINED_FIXUPS,
 	LC_ENCRYPTION_INFO,
 	LC_ENCRYPTION_INFO_64,
 	LC_LOAD_DYLIB,
 	LC_LOAD_WEAK_DYLIB,
-	LC_MAIN,
-	LC_RPATH,
 	LC_SEGMENT,
 	LC_SEGMENT_64,
 	LC_SYMTAB,
 	LC_UUID,
-	type LinkeditDataCommand,
-	type MainCommand,
 	parseLoadCommands,
-	type RpathCommand,
 	readCString,
-	readVersion,
-	type Segment64,
-	type SymtabCommand,
-	type UUIDCommand
+	readVersion
 } from "../load-commands";
 
 // ── Fixture Helpers ───────────────────────────────────────────────────
@@ -661,5 +649,8 @@ describe("parseLoadCommands", () => {
 		expect(result.libraries).toHaveLength(1);
 		expect(result.uuid).not.toBeNull();
 		expect(result.encryption).not.toBeNull();
+		// cryptid 0 means unencrypted. security.ts and the renderer both branch
+		// on this exact value, so the unencrypted case needs its own assertion.
+		expect(result.encryption!.cryptid).toBe(0);
 	});
 });

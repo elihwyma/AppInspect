@@ -16,8 +16,7 @@ import type {
 	LibraryGraphData,
 	LocalisationString,
 	PlistValue,
-	SecurityFinding,
-	SourceType
+	SecurityFinding
 } from "../../shared/types";
 import type { DEBBinaryInfo } from "../deb/extractor";
 import { extractDEB } from "../deb/extractor";
@@ -56,8 +55,6 @@ export class AnalysisSession {
 	private extractedDir: string | null = null;
 	private appBundlePath: string | null = null;
 	private binaries: BinaryInfo[] = [];
-	private infoPlist: Record<string, unknown> = {};
-	private sourceType: SourceType = "ipa";
 	private filePath: string = "";
 	private activeBinaryName: string = "";
 	private fatSliceOffset: number = 0;
@@ -259,7 +256,6 @@ export class AnalysisSession {
 		}
 
 		this.extractedDir = cacheDir;
-		this.sourceType = "ipa";
 		this.filePath = ipaPath;
 
 		// Step 2: Discover app bundle and binaries
@@ -293,7 +289,6 @@ export class AnalysisSession {
 			const msg = err instanceof Error ? err.message : String(err);
 			errors.push(`Info.plist error: ${msg}`);
 		}
-		this.infoPlist = infoPlistData;
 
 		// Steps 4-12: Analyse main binary (index 0)
 		progressCallback("Reading binary...", 25);
@@ -497,10 +492,8 @@ export class AnalysisSession {
 		filePath: string,
 		progressCallback: (phase: string, percent: number) => void
 	): Promise<AnalysisResult> {
-		this.sourceType = "macho";
 		this.filePath = filePath;
 		this.appBundlePath = null;
-		this.infoPlist = {};
 
 		const fileName = path.basename(filePath);
 		let fileSize = 0;
@@ -555,9 +548,7 @@ export class AnalysisSession {
 		debPath: string,
 		progressCallback: (phase: string, percent: number) => void
 	): Promise<AnalysisResult> {
-		this.sourceType = "deb";
 		this.filePath = debPath;
-		this.infoPlist = {};
 
 		// Step 1: Extract DEB (skip if a valid cache exists)
 		const cacheDir = getCacheDir(debPath);
@@ -674,7 +665,6 @@ export class AnalysisSession {
 		appPath: string,
 		progressCallback: (phase: string, percent: number) => void
 	): Promise<AnalysisResult> {
-		this.sourceType = "app";
 		this.filePath = appPath;
 
 		// macOS .app bundles use Contents/ structure
@@ -697,13 +687,18 @@ export class AnalysisSession {
 		progressCallback("Parsing plists...", 10);
 		let infoPlistData: Record<string, PlistValue> = {};
 		const plistDir = isMacOS ? path.join(appPath, "Contents") : appPath;
+		// parseInfoPlist signals a malformed plist in-band as { ok: false } and a
+		// missing one as null, so only a thrown error reaches the catch below.
 		try {
 			const plistResult = parseInfoPlist(plistDir);
 			if (plistResult && plistResult.ok) {
 				infoPlistData = plistResult.data.raw as Record<string, PlistValue>;
+			} else if (plistResult && !plistResult.ok) {
+				console.warn(`[plist] ${plistResult.error} (at ${plistDir})`);
 			}
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
+			console.warn(`[plist] Failed to read ${plistDir}: ${msg}`);
 			// Try the .app root as fallback
 			try {
 				const plistResult = parseInfoPlist(appPath);
@@ -714,7 +709,6 @@ export class AnalysisSession {
 				// Non-critical
 			}
 		}
-		this.infoPlist = infoPlistData;
 
 		// Steps 3-12: Analyse main binary
 		progressCallback("Reading binary...", 15);

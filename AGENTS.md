@@ -61,7 +61,7 @@ Biome handles linting and formatting. Configuration in `biome.json`.
 bun run lint        # Run linter only
 bun run format      # Format files in place
 bun run format:check # Check formatting (CI mode)
-bun run check       # Lint + format check
+bun run check       # Lint + format check (unused symbols are errors, not warnings)
 bun run check:fix   # Lint + format with auto-fix
 ```
 
@@ -83,6 +83,8 @@ Strict mode enabled. Key flags: `noUncheckedIndexedAccess`, `noFallthroughCasesI
 ## Testing
 
 Framework: `bun:test` (`describe`, `it`, `expect`). Tests live in `__tests__/` directories next to the code they test.
+
+`bunfig.toml` sets `[test] root = "src"`. Without it `bun test` walks the whole tree and also picks up the compiled `*.test.js` files that `bun run build` leaves in `dist/` — stale copies that keep passing long after their TypeScript sources have changed.
 
 - `src/main/parser/__tests__/` — parser unit tests (fixtures in `fixtures.ts`)
 - `src/main/analysis/__tests__/` — security scan tests

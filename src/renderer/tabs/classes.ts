@@ -815,7 +815,7 @@ export function renderClasses(
 				if (options.side === "right") el.style.minWidth = `${newW}px`;
 			};
 
-			const onUp = (ev: MouseEvent): void => {
+			const onUp = (): void => {
 				document.removeEventListener("mousemove", onMove);
 				document.removeEventListener("mouseup", onUp);
 				document.body.style.userSelect = prevSelect;

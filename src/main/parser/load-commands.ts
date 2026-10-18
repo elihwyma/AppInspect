@@ -295,7 +295,9 @@ function parseSection32(view: DataView, offset: number, le: boolean): Section64 
  * @param ncmds       Number of load commands (from mach_header.ncmds)
  * @param sizeofcmds  Total byte size of all load commands
  * @param littleEndian Endianness detected from magic
- * @param is64Bit     Whether this is a 64-bit Mach-O (affects segment/section parsing)
+ * @param _is64Bit    Unused. Segment vs. section layout is selected per command by
+ *                    the LC_SEGMENT / LC_SEGMENT_64 opcode, not by this flag. Kept
+ *                    to preserve the existing call signature.
  */
 export function parseLoadCommands(
 	buffer: ArrayBuffer,
@@ -303,7 +305,7 @@ export function parseLoadCommands(
 	ncmds: number,
 	sizeofcmds: number,
 	littleEndian: boolean,
-	is64Bit: boolean = true
+	_is64Bit: boolean = true
 ): LoadCommandsResult {
 	const view = new DataView(buffer);
 	const le = littleEndian;
