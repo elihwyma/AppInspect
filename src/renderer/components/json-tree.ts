@@ -2,6 +2,8 @@
  * Collapsible JSON tree viewer with syntax coloring.
  */
 
+import { makeCopyable } from "../utils/clipboard";
+
 export class JsonTree {
 	private container: HTMLElement | null = null;
 	private root: HTMLElement | null = null;
@@ -90,12 +92,7 @@ export class JsonTree {
 			}
 			line.appendChild(valEl);
 
-			// Click to copy value
-			line.style.cursor = "pointer";
-			line.title = "Click to copy value";
-			line.addEventListener("click", () => {
-				navigator.clipboard.writeText(String(value)).catch(() => {});
-			});
+			makeCopyable(line, () => String(value));
 		} else {
 			// Show type summary
 			const summary = document.createElement("span");

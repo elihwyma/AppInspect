@@ -3,8 +3,8 @@
  * Uses fixed row height and simple virtual scrolling.
  */
 
+import { copyText } from "../utils/clipboard";
 import { loadWidths, saveWidths } from "../utils/layout-store";
-import { showToast } from "./toast";
 
 export interface Column {
 	key: string;
@@ -512,13 +512,7 @@ export class DataTable {
 				const val = row[col.key];
 				cell.textContent = val != null ? String(val) : "";
 				cell.title = val != null ? String(val) : "";
-				cell.addEventListener("dblclick", (e) => {
-					e.stopPropagation();
-					const text = cell.textContent ?? "";
-					navigator.clipboard
-						.writeText(text)
-						.then(() => showToast("Copied to clipboard", "info"));
-				});
+				cell.addEventListener("dblclick", () => copyText(cell.textContent ?? ""));
 				rowEl.appendChild(cell);
 			}
 
