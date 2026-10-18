@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "description": "IPA reverse engineering desktop app",
   "main": "dist/main/index.js",
+  "bin": {
+    "appinspect": "dist/cli/index.js"
+  },
   "private": true,
   "scripts": {
-    "build": "bun run build:main && bun run build:preload && bun run build:renderer && bun run build:css && bun run build:mcp",
+    "build": "bun run build:main && bun run build:preload && bun run build:renderer && bun run build:css && bun run build:mcp && bun run build:cli",
     "build:main": "bun build src/main/index.ts --outdir dist/main --target node --format cjs --external electron && bun scripts/copy-assets.ts dist/main",
     "build:preload": "bun build src/preload/index.ts --outdir dist/preload --target node --format cjs --external electron",
     "build:renderer": "bun build src/renderer/index.ts --outdir dist/renderer --target browser",
@@ -17,7 +20,9 @@
     "dist:win:portable": "bun run build && electron-builder --win portable",
     "dist:linux": "bun run build && electron-builder --linux",
     "build:mcp": "bun build src/mcp/server.ts --outfile dist/mcp/server.js --target bun --external @modelcontextprotocol/sdk --external bplist-parser --external plist --external fflate --external electron --external zod && bun scripts/copy-assets.ts dist/mcp",
+    "build:cli": "bun build src/cli/index.ts --outfile dist/cli/index.js --target bun --external @modelcontextprotocol/sdk --external bplist-parser --external plist --external fflate --external electron --external zod --external swift-demangle-wasm && bun scripts/copy-assets.ts dist/cli",
     "mcp": "bun dist/mcp/server.js",
+    "cli": "bun dist/cli/index.js",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "lint": "biome lint ./src ./scripts",
