@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { isMachOFile } from "../parser/macho";
 import { parsePlistBuffer } from "../parser/plist";
+import { hasEscapingSymlink } from "../util/safe-path";
 
 export interface BinaryInfo {
 	name: string;
@@ -32,7 +33,14 @@ export async function extractIPA(
 		// Ensure destDir exists
 		fs.mkdirSync(destDir, { recursive: true });
 
-		return await extractWithSystem(ipaPath, destDir);
+		const result = await extractWithSystem(ipaPath, destDir);
+		// Detect (but do not reject) escaping symlinks — see the DEB extractor for
+		// the rationale: this runs after extraction, and rejecting would break
+		// valid bundles that contain absolute or dangling symlinks.
+		if (result.success && hasEscapingSymlink(destDir)) {
+			console.warn("[IPA] Archive contains a symlink escaping the extraction directory");
+		}
+		return result;
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
 		return { success: false, error: `Failed to extract IPA: ${message}` };

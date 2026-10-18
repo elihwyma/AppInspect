@@ -17,7 +17,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { DEBControlInfo } from "../../shared/types";
 import { isMachOFile } from "../parser/macho";
-import { safeJoin } from "../util/safe-path";
+import { hasEscapingSymlink, safeJoin } from "../util/safe-path";
 
 export interface DEBBinaryInfo {
 	name: string;
@@ -329,6 +329,15 @@ export async function extractDEB(
 					console.warn(`[DEB] Failed to parse control: ${msg}`);
 				}
 			}
+		}
+
+		// Detect (but do not reject) archives shipping a symlink that escapes the
+		// extraction directory. Rejecting here cannot undo a write that `tar`
+		// already performed, and legitimate packages can contain absolute or
+		// dangling symlinks, so failing would break valid inputs. Downstream
+		// discovery/tree code uses Dirent type checks that do not follow links.
+		if (hasEscapingSymlink(tempDir)) {
+			console.warn("[DEB] Archive contains a symlink escaping the extraction directory");
 		}
 
 		// Discover binaries
