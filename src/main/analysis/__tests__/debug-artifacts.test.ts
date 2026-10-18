@@ -49,8 +49,23 @@ describe("checkDebugArtifacts", () => {
 		expect(findings[0]!.evidence).toBe("stabs=3");
 	});
 
-	it("emits nothing for a stripped binary with no paths", () => {
-		expect(checkDebugArtifacts(params())).toEqual([]);
+	it("emits nothing for a stripped binary carrying only production strings", () => {
+		// Must supply realistic-but-benign input: an all-empty fixture would pass
+		// against any implementation that returned [] unconditionally.
+		expect(
+			checkDebugArtifacts(
+				params({
+					segmentNames: ["__TEXT", "__DATA", "__LINKEDIT"],
+					sectionNames: ["__text", "__cstring", "__const", "__objc_methname"],
+					strings: [
+						makeStr("LoginViewController"),
+						makeStr("https://api.example.com/v1/users"),
+						makeStr("/System/Library/Frameworks/UIKit.framework/UIKit"),
+						makeStr("Failed to load view")
+					]
+				})
+			)
+		).toEqual([]);
 	});
 
 	it("flags developer source paths but not system paths or URLs", () => {

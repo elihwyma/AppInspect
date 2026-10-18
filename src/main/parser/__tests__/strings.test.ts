@@ -3,7 +3,6 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { vmaddrToFileOffset } from "../address";
 import type { Section64, Segment64 } from "../load-commands";
 import { extractStrings, type StringEntry } from "../strings";
 
@@ -73,19 +72,6 @@ function writeUTF16LE(view: DataView, offset: number, str: string): number {
 // ── Tests ────────────────────────────────────────────────────────────
 
 describe("strings", () => {
-	describe("vmaddrToFileOffset", () => {
-		it("converts a vmaddr inside a segment to a file offset", () => {
-			const seg = makeSegment("__TEXT", 0x100000000n, 0x10000n, 0n, 0x10000n);
-			const result = vmaddrToFileOffset(0x100000100n, [seg]);
-			expect(result).toBe(0x100);
-		});
-
-		it("returns null for a vmaddr outside all segments", () => {
-			const seg = makeSegment("__TEXT", 0x100000000n, 0x10000n, 0n, 0x10000n);
-			expect(vmaddrToFileOffset(0x200000000n, [seg])).toBeNull();
-		});
-	});
-
 	describe("__cstring extraction", () => {
 		it("extracts null-terminated strings >= 4 chars", () => {
 			const sectionOffset = 100;

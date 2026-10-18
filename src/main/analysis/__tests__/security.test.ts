@@ -96,6 +96,8 @@ describe("Security Scan Engine", () => {
 
 	// ── PIE ──
 
+	// baseParams() already defaults to headerFlags: MH_PIE, so every other test in
+	// this file exercises the PIE-set branch. Only the negative case needs stating.
 	it("does not report PIE when MH_PIE flag is set", () => {
 		const findings = runSecurityScan(baseParams({ headerFlags: MH_PIE }));
 		expect(findings.find((f) => f.message.includes("PIE"))).toBeUndefined();
@@ -112,6 +114,8 @@ describe("Security Scan Engine", () => {
 	// ── Stack canaries ──
 
 	it("detects stack canaries via symbol names", () => {
+		// A single canary symbol also leaves the binary "stripped", which emits an
+		// unrelated finding — assert specifically on the canary rule.
 		const params = baseParams({
 			symbols: [makeSym("___stack_chk_guard")]
 		});
@@ -124,6 +128,13 @@ describe("Security Scan Engine", () => {
 			encryption: null
 		});
 		expect(hardening.stackCanaries).toBe(true);
+	});
+
+	it("reports missing stack canaries when no canary symbol is present", () => {
+		const findings = runSecurityScan(baseParams());
+		const canary = findings.find((f) => f.message.includes("Stack canaries"));
+		expect(canary).toBeDefined();
+		expect(canary!.severity).toBe("warning");
 	});
 
 	// ── Insecure APIs ──

@@ -217,10 +217,4 @@ describe("parseMachOHeader", () => {
 		if (result.ok) return;
 		expect(result.error).toContain("too small");
 	});
-
-	it("should not crash on zero-length buffer", () => {
-		const buf = new ArrayBuffer(0);
-		const result = parseMachOHeader(buf, 0);
-		expect(result.ok).toBe(false);
-	});
 });

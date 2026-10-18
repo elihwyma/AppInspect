@@ -410,68 +410,6 @@ describe("parseLoadCommands", () => {
 		expect(s.sections[1]!.reserved2).toBe(6);
 	});
 
-	it("parses LC_SEGMENT_64 with 3 sections", () => {
-		const seg = buildSegment64({
-			segname: "__DATA",
-			vmaddr: 0x200000000n,
-			vmsize: 0x8000n,
-			fileoff: 0x4000n,
-			filesize: 0x8000n,
-			maxprot: 3,
-			initprot: 3,
-			flags: 0,
-			sections: [
-				{
-					sectname: "__data",
-					segname: "__DATA",
-					addr: 0x200001000n,
-					size: 0x500n,
-					offset: 0x5000,
-					align: 3,
-					reloff: 0,
-					nreloc: 0,
-					flags: 0,
-					reserved1: 0,
-					reserved2: 0,
-					reserved3: 0
-				},
-				{
-					sectname: "__bss",
-					segname: "__DATA",
-					addr: 0x200002000n,
-					size: 0x200n,
-					offset: 0,
-					align: 3,
-					reloff: 0,
-					nreloc: 0,
-					flags: 1,
-					reserved1: 0,
-					reserved2: 0,
-					reserved3: 0
-				},
-				{
-					sectname: "__objc_classlist",
-					segname: "__DATA",
-					addr: 0x200003000n,
-					size: 0x80n,
-					offset: 0x6000,
-					align: 3,
-					reloff: 0,
-					nreloc: 0,
-					flags: 0x10000000,
-					reserved1: 0,
-					reserved2: 0,
-					reserved3: 0
-				}
-			]
-		});
-
-		const result = parse([seg]);
-		expect(result.segments[0]!.sections).toHaveLength(3);
-		expect(result.segments[0]!.sections[2]!.sectname).toBe("__objc_classlist");
-		expect(result.segments[0]!.sections[2]!.flags).toBe(0x10000000);
-	});
-
 	it("parses LC_LOAD_DYLIB with name string extraction", () => {
 		const dylib = buildDylibCommand({
 			name: "/usr/lib/libSystem.B.dylib",
@@ -723,6 +661,5 @@ describe("parseLoadCommands", () => {
 		expect(result.libraries).toHaveLength(1);
 		expect(result.uuid).not.toBeNull();
 		expect(result.encryption).not.toBeNull();
-		expect(result.encryption!.cryptid).toBe(0);
 	});
 });

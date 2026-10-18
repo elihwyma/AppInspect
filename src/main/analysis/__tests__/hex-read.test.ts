@@ -5,6 +5,10 @@ import { AnalysisSession, formatHexdump } from "../orchestrator";
 
 const TMP_DIR = path.join(import.meta.dir, ".tmp-hex-test");
 const TEST_FILE = path.join(TMP_DIR, "test.bin");
+const BIG_FILE = path.join(TMP_DIR, "big.bin");
+
+/** Size chosen to sit above the 64 KiB read cap by a wide margin. */
+const BIG_FILE_SIZE = 100_000;
 
 // Known bytes for the test file — a valid-ish Mach-O header followed by recognizable data
 const TEST_BYTES = new Uint8Array(512);
@@ -31,9 +35,16 @@ for (let i = 0; i < textPattern.length; i++) {
 	TEST_BYTES[256 + i] = textPattern.charCodeAt(i);
 }
 
-beforeAll(() => {
+let session: AnalysisSession;
+
+beforeAll(async () => {
 	mkdirSync(TMP_DIR, { recursive: true });
 	writeFileSync(TEST_FILE, TEST_BYTES);
+	writeFileSync(BIG_FILE, new Uint8Array(BIG_FILE_SIZE));
+
+	// analyseMachO sets filePath and binaries even if parsing is minimal
+	session = new AnalysisSession();
+	await session.analyseMachO(TEST_FILE, () => {});
 });
 
 afterAll(() => {
@@ -41,14 +52,6 @@ afterAll(() => {
 });
 
 describe("AnalysisSession.readHex", () => {
-	let session: AnalysisSession;
-
-	beforeAll(async () => {
-		session = new AnalysisSession();
-		// analyseMachO sets filePath and binaries even if parsing is minimal
-		await session.analyseMachO(TEST_FILE, () => {});
-	});
-
 	it("reads bytes at offset 0", () => {
 		const result = session.readHex(0, 16);
 		expect(result).not.toBeNull();
@@ -79,14 +82,6 @@ describe("AnalysisSession.readHex", () => {
 		expect(result!.data).toEqual([]);
 	});
 
-	it("caps length at 65536", () => {
-		const result = session.readHex(0, 100000);
-		expect(result).not.toBeNull();
-		// File is 512 bytes, so actual read should be capped by file size
-		expect(result!.length).toBeLessThanOrEqual(512);
-		expect(result!.length).toBeGreaterThan(0);
-	});
-
 	it("returns fileSize", () => {
 		const result = session.readHex(0, 1);
 		expect(result).not.toBeNull();
@@ -94,14 +89,39 @@ describe("AnalysisSession.readHex", () => {
 	});
 });
 
-describe("AnalysisSession.resolveBinary", () => {
-	let session: AnalysisSession;
+describe("AnalysisSession.readHex length clamping", () => {
+	let bigSession: AnalysisSession;
 
 	beforeAll(async () => {
-		session = new AnalysisSession();
-		await session.analyseMachO(TEST_FILE, () => {});
+		bigSession = new AnalysisSession();
+		await bigSession.analyseMachO(BIG_FILE, () => {});
 	});
 
+	// The cap is a DoS guard: without it a single IPC call could ask for and
+	// materialise an arbitrary number of bytes. Assert the exact clamped length
+	// against a file larger than the cap so the file-size limit cannot mask it.
+	it("clamps a read to the 65536-byte cap on a file larger than the cap", () => {
+		const result = bigSession.readHex(0, 100000);
+		expect(result).not.toBeNull();
+		expect(result!.length).toBe(65536);
+		expect(result!.data).toHaveLength(65536);
+		expect(result!.fileSize).toBe(BIG_FILE_SIZE);
+	});
+
+	it("reads the whole file when the request is under the cap", () => {
+		const result = bigSession.readHex(0, 1024);
+		expect(result!.length).toBe(1024);
+	});
+
+	it("clamps a negative length to zero instead of throwing", () => {
+		const result = bigSession.readHex(0, -100);
+		expect(result).not.toBeNull();
+		expect(result!.length).toBe(0);
+		expect(result!.data).toEqual([]);
+	});
+});
+
+describe("AnalysisSession.resolveBinary", () => {
 	it("resolves the active binary without recomputing", async () => {
 		const { result, path: binPath } = await session.resolveBinary(0);
 		expect(session.getResult()).toBe(result);
@@ -120,13 +140,6 @@ describe("AnalysisSession.resolveBinary", () => {
 });
 
 describe("AnalysisSession.searchHex", () => {
-	let session: AnalysisSession;
-
-	beforeAll(async () => {
-		session = new AnalysisSession();
-		await session.analyseMachO(TEST_FILE, () => {});
-	});
-
 	it("finds a known byte pattern", () => {
 		// Search for MH_MAGIC_64 bytes: CF FA ED FE
 		const result = session.searchHex(0, 512, [0xcf, 0xfa, 0xed, 0xfe]);

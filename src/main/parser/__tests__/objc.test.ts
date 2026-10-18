@@ -307,44 +307,55 @@ describe("objc", () => {
 			expect(result.classes[0]!.name).toBe("RebasedClass");
 		});
 
-		it("finds __objc_classlist in __DATA_CONST segment", () => {
-			const buf = new ArrayBuffer(0x5000);
-			const view = new DataView(buf);
-			const le = true;
-			const baseVmaddr = 0x100000000n;
+		// objc.ts's findObjCSection scans a fixed list of candidate segments, not
+		// just __DATA. A single hand-written case would leave four of the five
+		// untested, so drive the shared fixture over the whole list.
+		const OBJC_SEGMENTS = ["__DATA", "__DATA_CONST", "__AUTH_CONST", "__AUTH", "__DATA_DIRTY"];
 
-			// class_t at file offset 0x1000
-			const classVmaddr = baseVmaddr + 0x1000n;
-			view.setBigUint64(0x0, classVmaddr, le);
+		for (const segname of OBJC_SEGMENTS) {
+			it(`finds __objc_classlist in the ${segname} segment`, () => {
+				const buf = new ArrayBuffer(0x5000);
+				const view = new DataView(buf);
+				const le = true;
+				const baseVmaddr = 0x100000000n;
 
-			const classFileOff = 0x1000;
-			const roVmaddr = baseVmaddr + 0x2000n;
-			view.setBigUint64(classFileOff + 32, roVmaddr, le);
+				// class_t at file offset 0x1000
+				const classVmaddr = baseVmaddr + 0x1000n;
+				view.setBigUint64(0x0, classVmaddr, le);
 
-			// class_ro_t
-			const nameVmaddr = baseVmaddr + 0x3000n;
-			view.setBigUint64(0x2000 + 24, nameVmaddr, le);
-			view.setBigUint64(0x2000 + 32, 0n, le);
+				const classFileOff = 0x1000;
+				const roVmaddr = baseVmaddr + 0x2000n;
+				view.setBigUint64(classFileOff + 32, roVmaddr, le);
 
-			writeCString(view, 0x3000, "ConstClass");
+				// class_ro_t
+				const nameVmaddr = baseVmaddr + 0x3000n;
+				view.setBigUint64(0x2000 + 24, nameVmaddr, le);
+				view.setBigUint64(0x2000 + 32, 0n, le);
 
-			// Section in __DATA_CONST
-			const classlistSection = makeSection(
-				"__DATA_CONST",
-				"__objc_classlist",
-				baseVmaddr,
-				8n,
-				0
-			);
+				writeCString(view, 0x3000, "SegClass");
 
-			const segments = [makeSegment("__DATA_CONST", baseVmaddr, 0x5000n, 0n, 0x5000n)];
+				const classlistSection = makeSection(
+					segname,
+					"__objc_classlist",
+					baseVmaddr,
+					8n,
+					0
+				);
+				const segments = [makeSegment(segname, baseVmaddr, 0x5000n, 0n, 0x5000n)];
 
-			const rebaseMap = new Map<number, bigint>();
-			const result = extractObjCMetadata(buf, [classlistSection], segments, rebaseMap, le);
+				const rebaseMap = new Map<number, bigint>();
+				const result = extractObjCMetadata(
+					buf,
+					[classlistSection],
+					segments,
+					rebaseMap,
+					le
+				);
 
-			expect(result.classes.length).toBe(1);
-			expect(result.classes[0]!.name).toBe("ConstClass");
-		});
+				expect(result.classes.length).toBe(1);
+				expect(result.classes[0]!.name).toBe("SegClass");
+			});
+		}
 
 		it("extracts protocol names from __objc_protolist", () => {
 			const buf = new ArrayBuffer(0x5000);

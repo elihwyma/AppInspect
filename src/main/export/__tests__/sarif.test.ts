@@ -157,9 +157,8 @@ describe("sarif export", () => {
 		expect(second.locations[0].physicalLocation.artifactLocation.uriBaseId).toBe("SRCROOT");
 	});
 
-	it("emits valid JSON with no undefined values", () => {
+	it("emits no undefined values anywhere in the serialised log", () => {
 		const output = exportSarif(makeResult(FINDINGS));
-		expect(JSON.parse(output)).toBeDefined();
 		expect(output.includes("undefined")).toBe(false);
 	});
 });

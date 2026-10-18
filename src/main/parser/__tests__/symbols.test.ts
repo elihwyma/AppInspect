@@ -262,30 +262,9 @@ describe("parseExportTrie", () => {
 	});
 
 	it("parses a single terminal node", () => {
-		// Build a minimal trie: root node with terminal info, no children
-		// terminal_size = 2 (flags ULEB + addr ULEB)
-		// flags = 0x00 (regular)
-		// address = 0x1000 (ULEB128: 0x80, 0x20)
-		// children_count = 0
-		const bytes = [
-			0x02, // terminal_size = 2
-			0x00, // flags = 0
-			0x80,
-			0x20 // address = 0x1000 (ULEB128) -- wait, let me recalc
-		];
-		// Actually ULEB128 for 0x1000 = 4096:
-		// 4096 = 0x1000, in ULEB128: byte0 = 0x80 (0 + continue), byte1 = 0x20 (0x20 << 7 = 4096) -- 0x80, 0x20
-		// Hmm: 4096 / 128 = 32, so byte0 = 0x00 | 0x80 = 0x80, byte1 = 0x20. Value = 0 + (0x20 << 7) = 4096. Correct.
-
-		// But terminal_size = 2 means 2 bytes of terminal data AFTER terminal_size field.
-		// Actually terminal_size says how many bytes of payload follow (flags + addr).
-		// flags(1 byte: 0x00) + addr(1 byte... no, addr = 0x80,0x20 is 2 bytes). That's 3 bytes, not 2.
-		// Let me use a simpler address: 5 (single byte ULEB = 0x05).
-
-		// terminal_size = 2 (flags=1byte + addr=1byte)
-		// flags = 0x00
-		// addr = 0x05
-		// then children_count = 0
+		// Minimal trie: a root node that is itself terminal, with no children.
+		// terminal_size = 2 (flags + addr), flags = 0x00 (regular),
+		// addr = 5 (single-byte ULEB), children_count = 0.
 		const trieBytes = [
 			0x02, // terminal_size = 2
 			0x00, // flags
