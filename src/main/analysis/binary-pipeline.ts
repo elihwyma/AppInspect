@@ -36,6 +36,7 @@ import type { MachOFile } from "../parser/macho";
 import { CPU_TYPE_ARM64, parseFatHeader, parseMachOHeader } from "../parser/macho";
 import { enrichMethodsFromSymbols, extractObjCMetadata } from "../parser/objc";
 import { extractStrings } from "../parser/strings";
+import { demangleSwiftSymbol, initSwiftDemangler } from "../parser/swift-demangle";
 import type { SymbolEntry as ParserSymbol } from "../parser/symbols";
 import { parseSymbolTable } from "../parser/symbols";
 import { buildStringXrefMap, formatFunctionName, parseFunctionStarts } from "../parser/xrefs";
@@ -352,6 +353,7 @@ export async function analyseBinaryFile(
 	// Step 9: Parse symbols
 	progressCallback("Parsing symbols...", basePercent + 35);
 	await yieldToEventLoop();
+	await initSwiftDemangler();
 	let rawSymbols: ParserSymbol[] = [];
 	try {
 		rawSymbols = parseSymbolTable(
@@ -367,7 +369,10 @@ export async function analyseBinaryFile(
 			machoFile.littleEndian,
 			machoFile.is64Bit
 		);
-		symbols = convertSymbols(rawSymbols);
+		symbols = convertSymbols(rawSymbols).map((s) => {
+			const demangled = demangleSwiftSymbol(s.name);
+			return demangled ? { ...s, demangled } : s;
+		});
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
 		errors.push(`Symbol table parse error: ${msg}`);
@@ -499,7 +504,9 @@ export async function analyseBinaryFile(
 							const offset = parseInt(match[1]!, 16);
 							const names = stringXrefs.get(offset);
 							if (names && names.length > 0) {
-								finding.functionName = formatFunctionName(names[0]!);
+								const raw = names[0]!;
+								finding.functionName =
+									demangleSwiftSymbol(raw) ?? formatFunctionName(raw);
 							}
 						}
 					}

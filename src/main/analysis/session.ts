@@ -163,7 +163,7 @@ export class AnalysisSession {
 				this.searchIndex.set(i, {
 					classes: result.classes.map((c) => c.name),
 					strings: result.strings.map((s) => s.value),
-					symbols: result.symbols.map((s) => s.name),
+					symbols: result.symbols.map((s) => s.demangled ?? s.name),
 					symbolTypes: result.symbols.map((s) => s.type),
 					libraries: result.libraries.map((l) => l.name)
 				});

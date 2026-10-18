@@ -215,6 +215,8 @@ export interface LinkedLibrary {
 
 export interface SymbolEntry {
 	name: string;
+	/** Human-readable name for Swift/mangled symbols; undefined when not applicable. */
+	demangled?: string;
 	type: "exported" | "imported" | "local";
 	address: bigint;
 	sectionIndex: number;
