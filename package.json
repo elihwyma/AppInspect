@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "build": "bun run build:main && bun run build:preload && bun run build:renderer && bun run build:css && bun run build:mcp",
-    "build:main": "bun build src/main/index.ts --outdir dist/main --target node --format cjs --external electron",
+    "build:main": "bun build src/main/index.ts --outdir dist/main --target node --format cjs --external electron && bun scripts/copy-assets.ts dist/main",
     "build:preload": "bun build src/preload/index.ts --outdir dist/preload --target node --format cjs --external electron",
     "build:renderer": "bun build src/renderer/index.ts --outdir dist/renderer --target browser",
     "build:css": "bun scripts/build-css.ts",
@@ -16,7 +16,7 @@
     "dist:win": "bun run build && electron-builder --win",
     "dist:win:portable": "bun run build && electron-builder --win portable",
     "dist:linux": "bun run build && electron-builder --linux",
-    "build:mcp": "bun build src/mcp/server.ts --outfile dist/mcp/server.js --target bun --external @modelcontextprotocol/sdk --external bplist-parser --external plist --external fflate --external electron --external zod",
+    "build:mcp": "bun build src/mcp/server.ts --outfile dist/mcp/server.js --target bun --external @modelcontextprotocol/sdk --external bplist-parser --external plist --external fflate --external electron --external zod && bun scripts/copy-assets.ts dist/mcp",
     "mcp": "bun dist/mcp/server.js",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
@@ -78,6 +78,7 @@
     "@modelcontextprotocol/sdk": "^1.12.1",
     "bplist-parser": "^0.3.2",
     "plist": "^3.1.0",
+    "swift-demangle-wasm": "^1.0.2",
     "zod": "^4.3.6"
   }
 }
