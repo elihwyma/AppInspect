@@ -27,7 +27,7 @@ File type is detected automatically by magic bytes.
 | **Classes** | ObjC class names and methods with decoded type signatures, protocol conformances per class, protocol detail view (required/optional instance/class methods), Logos hook generation, back/forward navigation history |
 | **Entitlements** | Code signature entitlements or provisioning profile fallback |
 | **Localisation** | Localisation strings from `.lproj` bundles with `.strings` file parsing |
-| **Info.plist** | Full Info.plist contents (IPA only) |
+| **Info.plist** | Key-facts summary at the top (bundle metadata, device family, supported platforms, privacy strings, ATS exceptions) above the full searchable key/value tree |
 | **Hooks** | Jailbreak hook framework detection — Substrate, Libhooker, fishhook, Substitute, ObjC swizzling (Mach-O/DEB only) |
 | **Security** | Credential leak scanning, weak crypto, unsafe APIs, dangerous syscalls, jailbreak detection strings, binary hardening assessment (issues only), leaked debug artifacts (DWARF, debug symbols, developer source paths, shipped source maps / Swift module interfaces / symbol maps), bundle file scanning (JS bundles, configs) |
 | **Hex** | Raw hex viewer with virtual scrolling for large binaries. Segment/section region picker, go-to offset, hex/decimal offset toggle. Dual-mode search (hex bytes or text) with match highlighting and navigation |
