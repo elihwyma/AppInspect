@@ -4,6 +4,7 @@
 
 import { SearchBar } from "../components";
 import { getSearchState, registerSearchBar, saveSearchState } from "../search-state";
+import { makeCopyable } from "../utils/clipboard";
 
 // ── Types ──
 
@@ -272,6 +273,7 @@ export function renderSecurity(container: HTMLElement, data: any, sessionId: str
 				eviText.textContent = isLong
 					? finding.evidence.slice(0, EVIDENCE_COLLAPSED_LEN) + "\u2026"
 					: finding.evidence;
+				makeCopyable(eviText, () => finding.evidence);
 				evi.appendChild(eviText);
 
 				if (isLong) {
@@ -299,12 +301,9 @@ export function renderSecurity(container: HTMLElement, data: any, sessionId: str
 				label.className = "sec-finding-function-label";
 				label.textContent = "Referenced in: ";
 				const name = document.createElement("code");
-				name.className = "sec-finding-function-name sec-copyable";
+				name.className = "sec-finding-function-name";
 				name.textContent = finding.functionName;
-				name.title = "Double-click to copy";
-				name.addEventListener("dblclick", () => {
-					navigator.clipboard.writeText(finding.functionName!);
-				});
+				makeCopyable(name, () => finding.functionName!);
 				fn.appendChild(label);
 				fn.appendChild(name);
 				card.appendChild(fn);
@@ -318,12 +317,9 @@ export function renderSecurity(container: HTMLElement, data: any, sessionId: str
 				srcLabel.className = "sec-finding-function-label";
 				srcLabel.textContent = "Source: ";
 				const srcName = document.createElement("code");
-				srcName.className = "sec-finding-function-name sec-copyable";
+				srcName.className = "sec-finding-function-name";
 				srcName.textContent = finding.source;
-				srcName.title = "Double-click to copy";
-				srcName.addEventListener("dblclick", () => {
-					navigator.clipboard.writeText(finding.source!);
-				});
+				makeCopyable(srcName, () => finding.source!);
 				src.appendChild(srcLabel);
 				src.appendChild(srcName);
 				card.appendChild(src);

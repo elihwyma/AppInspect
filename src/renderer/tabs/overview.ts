@@ -4,6 +4,7 @@
 
 import type { AnalysisResult } from "../../shared/types";
 import { EmptyState } from "../components";
+import { makeCopyable } from "../utils/clipboard";
 import { el } from "../utils/dom";
 import { decodeCpuType, decodeFileType, decodePlatform, isMacOSPlatform } from "../utils/macho";
 
@@ -15,6 +16,7 @@ function buildKV(label: string, value: string, extraClass?: string): HTMLElement
 	const row = el("div", "ov-kv");
 	row.appendChild(el("span", "ov-kv-label", label));
 	const valEl = el("span", extraClass ? `ov-kv-value ${extraClass}` : "ov-kv-value", value);
+	if (value !== "N/A") makeCopyable(valEl, () => value);
 	row.appendChild(valEl);
 	return row;
 }

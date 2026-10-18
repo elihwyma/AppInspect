@@ -4,6 +4,7 @@
 
 import { EmptyState, SearchBar } from "../components";
 import { getSearchState, registerSearchBar, saveSearchState } from "../search-state";
+import { copyText } from "../utils/clipboard";
 import {
 	addAllBinariesToggle,
 	binaryTypeBadge,
@@ -44,20 +45,6 @@ const BUFFER = 20;
 
 /** Set externally (e.g. by cross-binary click) to auto-select a class after render. */
 let pendingClassSelect: string | null = null;
-
-// ── Copy-to-clipboard helper with feedback ──
-
-function copyWithFeedback(btn: HTMLButtonElement, text: string): void {
-	navigator.clipboard.writeText(text).then(() => {
-		const orig = btn.textContent;
-		btn.textContent = "Copied!";
-		btn.classList.add("cls-sb-btn--copied");
-		setTimeout(() => {
-			btn.textContent = orig;
-			btn.classList.remove("cls-sb-btn--copied");
-		}, 1200);
-	});
-}
 
 // ── Main render ──
 
@@ -1138,7 +1125,7 @@ export function renderClasses(
 		const copyClassBtn = document.createElement("button");
 		copyClassBtn.className = "cls-sb-btn";
 		copyClassBtn.textContent = "Copy Class Name";
-		copyClassBtn.addEventListener("click", () => copyWithFeedback(copyClassBtn, className));
+		copyClassBtn.addEventListener("click", () => copyText(className, "Copied class name"));
 		actions.appendChild(copyClassBtn);
 
 		if (parsed) {
@@ -1147,7 +1134,7 @@ export function renderClasses(
 			copySelectorBtn.className = "cls-sb-btn";
 			copySelectorBtn.textContent = "Copy Selector";
 			copySelectorBtn.addEventListener("click", () =>
-				copyWithFeedback(copySelectorBtn, parsed.selector)
+				copyText(parsed.selector, "Copied selector")
 			);
 			actions.appendChild(copySelectorBtn);
 
@@ -1155,7 +1142,7 @@ export function renderClasses(
 			const copySigBtn = document.createElement("button");
 			copySigBtn.className = "cls-sb-btn";
 			copySigBtn.textContent = "Copy Signature";
-			copySigBtn.addEventListener("click", () => copyWithFeedback(copySigBtn, sig));
+			copySigBtn.addEventListener("click", () => copyText(sig, "Copied signature"));
 			actions.appendChild(copySigBtn);
 
 			// ── Logos Hook section ──
@@ -1178,14 +1165,14 @@ export function renderClasses(
 			const copyHookBtn = document.createElement("button");
 			copyHookBtn.className = "cls-sb-btn cls-sb-btn--accent";
 			copyHookBtn.textContent = "Copy Logos Hook";
-			copyHookBtn.addEventListener("click", () => copyWithFeedback(copyHookBtn, hookCode));
+			copyHookBtn.addEventListener("click", () => copyText(hookCode, "Copied Logos hook"));
 			hookSection.appendChild(copyHookBtn);
 		} else {
 			// Fallback: just copy the raw signature
 			const copySigBtn = document.createElement("button");
 			copySigBtn.className = "cls-sb-btn";
 			copySigBtn.textContent = "Copy Signature";
-			copySigBtn.addEventListener("click", () => copyWithFeedback(copySigBtn, sig));
+			copySigBtn.addEventListener("click", () => copyText(sig, "Copied signature"));
 			actions.appendChild(copySigBtn);
 		}
 	}
@@ -1250,7 +1237,7 @@ export function renderClasses(
 		copyProtoBtn.className = "cls-sb-btn";
 		copyProtoBtn.textContent = "Copy Protocol Name";
 		copyProtoBtn.addEventListener("click", () =>
-			copyWithFeedback(copyProtoBtn, selectedProtocol!.name)
+			copyText(selectedProtocol!.name, "Copied protocol name")
 		);
 		actions.appendChild(copyProtoBtn);
 
@@ -1258,16 +1245,14 @@ export function renderClasses(
 		const copySelectorBtn = document.createElement("button");
 		copySelectorBtn.className = "cls-sb-btn";
 		copySelectorBtn.textContent = "Copy Selector";
-		copySelectorBtn.addEventListener("click", () =>
-			copyWithFeedback(copySelectorBtn, m.selector)
-		);
+		copySelectorBtn.addEventListener("click", () => copyText(m.selector, "Copied selector"));
 		actions.appendChild(copySelectorBtn);
 
 		// Copy full signature
 		const copySigBtn = document.createElement("button");
 		copySigBtn.className = "cls-sb-btn";
 		copySigBtn.textContent = "Copy Signature";
-		copySigBtn.addEventListener("click", () => copyWithFeedback(copySigBtn, sig));
+		copySigBtn.addEventListener("click", () => copyText(sig, "Copied signature"));
 		actions.appendChild(copySigBtn);
 	}
 

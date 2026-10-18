@@ -6,6 +6,7 @@
 import type { FileEntry } from "../../shared/types";
 import { SearchBar } from "../components";
 import { getSearchState, registerSearchBar, saveSearchState } from "../search-state";
+import { copyText } from "../utils/clipboard";
 
 // ── Helpers ──
 
@@ -115,8 +116,8 @@ function showContextMenu(x: number, y: number, entry: FileEntry, row: HTMLElemen
 	menu.style.top = `${y}px`;
 
 	const items: { label: string; action: () => void }[] = [
-		{ label: "Copy Path", action: () => navigator.clipboard.writeText(entry.path) },
-		{ label: "Copy Name", action: () => navigator.clipboard.writeText(entry.name) },
+		{ label: "Copy Path", action: () => copyText(entry.path, "Copied path") },
+		{ label: "Copy Name", action: () => copyText(entry.name, "Copied name") },
 		{ label: getFolderLabel(), action: () => window.api.showItemInFolder(entry.path) }
 	];
 
