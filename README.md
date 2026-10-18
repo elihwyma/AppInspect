@@ -186,6 +186,7 @@ Subagent B: get_section({ section: "symbols", path: "/tmp/App2.ipa" })
 
 - All analysis runs locally, offline, with no network requests
 - The app does not need to be open — the MCP server is fully standalone
+- The server reads whatever local path you ask it to analyse, running with your privileges. To confine `analyse_file` to a directory tree, start it with `APPINSPECT_ALLOW_ROOT=/path/to/root`.
 - Large sections (strings, symbols, classes, libraries) support pagination via `offset` and `limit` (default: 200 items) and text filtering via `filter`
 - Symbol entries include a `demangled` field with the readable name for Swift symbols; the original `name` is preserved as-is
 - Extracted IPA/DEB content is cached in `~/.appinspect/cache/` so re-analysing the same file skips extraction

@@ -8,6 +8,12 @@
  * Each analyse_file call creates an isolated AnalysisSession keyed by file
  * path, so multiple subagents can analyse different files in parallel.
  *
+ * Security / trust model:
+ *   This server runs with the privileges of the user who launched it and will
+ *   read and parse any local path the connecting client names. Only run it on
+ *   inputs and with agents you trust. To confine reads to a directory tree,
+ *   set the APPINSPECT_ALLOW_ROOT environment variable (see below).
+ *
  * Tools:
  *   analyse_file   — Load and analyse a file (IPA, Mach-O, DEB, .app)
  *   get_overview    — Analysis summary (header, hardening, hooks, etc.)
@@ -22,12 +28,27 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import type { SearchableTab } from "../main/analysis/orchestrator";
 import { AnalysisSession, formatHexdump, pruneCache } from "../main/analysis/orchestrator";
+import { isInside } from "../main/util/safe-path";
 import type { AnalysisResult } from "../shared/types";
 
 // Keep stdout clean for MCP protocol — redirect console to stderr
 console.log = console.error;
 console.info = console.error;
 console.warn = console.error;
+
+// ── Optional path confinement ────────────────────────────────────────
+
+// Optional confinement: when APPINSPECT_ALLOW_ROOT is set, analyse_file only
+// accepts paths inside that directory. Unset (the default) preserves the
+// original "read any local path" behaviour.
+const allowRoot = process.env.APPINSPECT_ALLOW_ROOT;
+
+function assertAllowed(filePath: string): void {
+	if (!allowRoot) return;
+	if (!isInside(allowRoot, filePath)) {
+		throw new Error(`Path outside APPINSPECT_ALLOW_ROOT: ${filePath}`);
+	}
+}
 
 // ── BigInt serialisation ─────────────────────────────────────────────
 
@@ -208,12 +229,15 @@ server.registerTool(
 			"and available binaries. The result is cached for the session — call " +
 			"this once, then use the other tools to query the data. Multiple files " +
 			"can be analysed in parallel; pass the file path to query tools to " +
-			"target a specific analysis.",
+			"target a specific analysis. By default this reads any local path the " +
+			"client requests, running with your privileges; set APPINSPECT_ALLOW_ROOT " +
+			"to confine reads to a directory tree.",
 		inputSchema: {
 			path: z.string().describe("Absolute path to the file to analyse")
 		}
 	},
 	async ({ path }) => {
+		assertAllowed(path);
 		const session = new AnalysisSession();
 		const result = await session.analyseFile(path, noop);
 		sessions.set(path, session);
