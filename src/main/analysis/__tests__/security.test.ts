@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { EncryptionInfo, StringEntry, SymbolEntry } from "../../../shared/types";
+import type { StringEntry, SymbolEntry } from "../../../shared/types";
 import { getBinaryHardening, runSecurityScan, type SecurityScanParams } from "../security";
 
 // ── Helpers ──
@@ -93,16 +93,17 @@ describe("Security Scan Engine", () => {
 
 	// ── PIE ──
 
-	it("reports PIE enabled when MH_PIE flag is set", () => {
+	it("does not report PIE when MH_PIE flag is set", () => {
 		const findings = runSecurityScan(baseParams({ headerFlags: MH_PIE }));
-		const pie = findings.find((f) => f.message.includes("PIE") && f.severity === "info");
-		expect(pie).toBeDefined();
+		expect(findings.find((f) => f.message.includes("PIE"))).toBeUndefined();
 	});
 
-	it("reports missing PIE as info", () => {
+	it("reports missing PIE as warning", () => {
 		const findings = runSecurityScan(baseParams({ headerFlags: 0 }));
-		const pie = findings.find((f) => f.message.includes("PIE") && f.severity === "info");
+		const pie = findings.find((f) => f.message.includes("PIE"));
 		expect(pie).toBeDefined();
+		expect(pie!.severity).toBe("warning");
+		expect(pie!.message).toContain("not enabled");
 	});
 
 	// ── Stack canaries ──
@@ -112,9 +113,7 @@ describe("Security Scan Engine", () => {
 			symbols: [makeSym("___stack_chk_guard")]
 		});
 		const findings = runSecurityScan(params);
-		expect(
-			findings.some((f) => f.message.includes("Stack canaries") && f.severity === "info")
-		).toBe(true);
+		expect(findings.find((f) => f.message.includes("Stack canaries"))).toBeUndefined();
 
 		const hardening = getBinaryHardening({
 			symbols: params.symbols,
@@ -147,13 +146,6 @@ describe("Security Scan Engine", () => {
 		expect(weak.length).toBe(1);
 		expect(weak[0]!.severity).toBe("info");
 		expect(weak[0]!.evidence).toBe("_CC_MD5");
-	});
-
-	it("reports dynamic loading as info", () => {
-		const findings = runSecurityScan(baseParams({ symbols: [makeSym("_dlopen")] }));
-		const dl = findings.filter((f) => f.category === "dynamic-loading");
-		expect(dl.length).toBe(1);
-		expect(dl[0]!.severity).toBe("info");
 	});
 
 	// ── Jailbreak detection ──
@@ -221,16 +213,18 @@ describe("Security Scan Engine", () => {
 		expect(h.pie).toBe(false);
 	});
 
-	// ── Encryption ──
-
-	it("reports encryption status as info", () => {
+	it("emits no binary-hardening findings for a fully hardened binary", () => {
 		const findings = runSecurityScan(
 			baseParams({
-				encryption: { cryptoff: 0x1000, cryptsize: 0x2000, cryptid: 1 }
+				symbols: [
+					makeSym("_objc_release"),
+					makeSym("___stack_chk_guard"),
+					...Array.from({ length: 10 }, (_, i) => makeSym(`_sym${i}`))
+				],
+				encryption: { cryptoff: 0, cryptsize: 0, cryptid: 0 }
 			})
 		);
-		const enc = findings.find((f) => f.message.includes("encrypted") && f.severity === "info");
-		expect(enc).toBeDefined();
+		expect(findings.filter((f) => f.category === "binary-hardening")).toHaveLength(0);
 	});
 
 	// ── Rpath ──

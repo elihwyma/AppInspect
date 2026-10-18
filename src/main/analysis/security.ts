@@ -2,6 +2,8 @@
  * Security Scan Engine
  *
  * Pattern-matching and binary-hardening checks for Mach-O binaries.
+ * Findings are emitted only when they are actionable or non-obvious; the
+ * current-state hardening summary lives in the Overview tab.
  * No ML, no network requests — regex patterns only.
  */
 
@@ -124,12 +126,6 @@ const UNSAFE_API_SYMBOLS: Array<{
 		severity: "warning",
 		iosSeverity: "info",
 		message: "Dangerous system call used"
-	},
-	{
-		names: ["_dlopen", "_dlsym"],
-		category: "dynamic-loading",
-		severity: "info",
-		message: "Dynamic library loading used"
 	}
 ];
 
@@ -379,60 +375,32 @@ function checkBinaryHardeningFindings(params: SecurityScanParams): SecurityFindi
 	const isMacOS = params.platform === 1 || params.platform === 6; // macOS, Mac Catalyst
 
 	// PIE (skip on iOS — always required by App Store)
-	if (!isIOS) {
-		const pieEnabled = (params.headerFlags & MH_PIE) !== 0;
+	if (!isIOS && (params.headerFlags & MH_PIE) === 0) {
 		findings.push({
-			severity: "info",
+			severity: "warning",
 			category: "binary-hardening",
-			message: pieEnabled
-				? "PIE (Position Independent Executable) enabled"
-				: "PIE (Position Independent Executable) is NOT enabled",
+			message: "PIE (Position Independent Executable) is not enabled",
 			evidence: `headerFlags=0x${params.headerFlags.toString(16)}`
 		});
 	}
 
 	// Stack canaries
-	const canaries = hasStackCanaries(symbolNames);
-	findings.push({
-		severity: canaries ? "info" : "warning",
-		category: "binary-hardening",
-		message: canaries ? "Stack canaries detected" : "Stack canaries NOT detected",
-		evidence: canaries
-			? "Symbol ___stack_chk_guard or ___stack_chk_fail found"
-			: "No stack canary symbols found"
-	});
-
-	// ARC
-	const arc = hasARC(symbolNames);
-	findings.push({
-		severity: arc ? "info" : "warning",
-		category: "binary-hardening",
-		message: arc
-			? "ARC (Automatic Reference Counting) detected"
-			: "ARC (Automatic Reference Counting) NOT detected",
-		evidence: arc ? "ObjC ARC symbols found" : "No ObjC ARC symbols found"
-	});
-
-	// Encryption
-	if (params.encryption) {
-		const encrypted = params.encryption.cryptid !== 0;
+	if (!hasStackCanaries(symbolNames)) {
 		findings.push({
-			severity: "info",
+			severity: "warning",
 			category: "binary-hardening",
-			message: encrypted
-				? "Binary is encrypted (cryptid != 0) — likely from App Store"
-				: "Binary is decrypted (cryptid == 0)",
-			evidence: `cryptid=${params.encryption.cryptid}`
+			message: "Stack canaries not detected",
+			evidence: "No stack canary symbols found"
 		});
 	}
 
-	// Stripped
-	if (params.symbols.length < 10) {
+	// ARC
+	if (!hasARC(symbolNames)) {
 		findings.push({
-			severity: "info",
+			severity: "warning",
 			category: "binary-hardening",
-			message: "Symbols appear to be stripped (very few symbols present)",
-			evidence: `symbolCount=${params.symbols.length}`
+			message: "ARC (Automatic Reference Counting) not detected",
+			evidence: "No ObjC ARC symbols found"
 		});
 	}
 

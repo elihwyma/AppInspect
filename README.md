@@ -29,7 +29,7 @@ File type is detected automatically by magic bytes.
 | **Localisation** | Localisation strings from `.lproj` bundles with `.strings` file parsing |
 | **Info.plist** | Full Info.plist contents (IPA only) |
 | **Hooks** | Jailbreak hook framework detection — Substrate, Libhooker, fishhook, Substitute, ObjC swizzling (Mach-O/DEB only) |
-| **Security** | Credential leak scanning, weak crypto, unsafe APIs, dangerous syscalls, jailbreak detection strings, binary hardening assessment, bundle file scanning (JS bundles, configs) |
+| **Security** | Credential leak scanning, weak crypto, unsafe APIs, dangerous syscalls, jailbreak detection strings, binary hardening assessment (issues only), bundle file scanning (JS bundles, configs) |
 | **Hex** | Raw hex viewer with virtual scrolling for large binaries. Segment/section region picker, go-to offset, hex/decimal offset toggle. Dual-mode search (hex bytes or text) with match highlighting and navigation |
 | **Files** | Bundle file tree with sizes, context menu (copy path, open file, show in explorer/finder), double-click to open (IPA/DEB) |
 
