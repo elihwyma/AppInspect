@@ -88,6 +88,13 @@ export class AnalysisSession {
 		return active?.path ?? this.binaries[0]?.path ?? null;
 	}
 
+	/** Absolute roots the UI may reveal/open: the input file plus extracted dirs. */
+	getAllowedOpenRoots(): string[] {
+		return [this.filePath, this.extractedDir, this.appBundlePath].filter(
+			(p): p is string => typeof p === "string" && p.length > 0
+		);
+	}
+
 	// ── Hex read ──────────────────────────────────────────────────────
 
 	/** Read raw bytes from the active binary for hex display. */

@@ -14,6 +14,7 @@ import type { SearchableTab } from "../analysis/orchestrator";
 import { AnalysisSession } from "../analysis/orchestrator";
 import { exportAnalysis } from "../export/json";
 import { loadSettings, saveSettings } from "../settings";
+import { isInsideAny } from "../util/safe-path";
 
 /**
  * Custom replacer for JSON.stringify that converts BigInt values to numbers.
@@ -44,6 +45,14 @@ function getSession(sessionId: string): AnalysisSession {
 	const session = sessions.get(sessionId);
 	if (!session) throw new Error(`No session for ${sessionId}. Analyse a file first.`);
 	return session;
+}
+
+/** True when the path belongs to one of the loaded sessions. */
+function isKnownPath(candidate: string): boolean {
+	for (const session of sessions.values()) {
+		if (isInsideAny(session.getAllowedOpenRoots(), candidate)) return true;
+	}
+	return false;
 }
 
 export function registerIPCHandlers(win: BrowserWindow): void {
@@ -348,11 +357,13 @@ export function registerIPCHandlers(win: BrowserWindow): void {
 
 	// ── show-item-in-folder ──
 	ipcMain.handle("show-item-in-folder", (_event, args: { path: string }) => {
+		if (!isKnownPath(args.path)) return;
 		shell.showItemInFolder(args.path);
 	});
 
 	// ── open-file ──
 	ipcMain.handle("open-file", async (_event, args: { path: string }) => {
+		if (!isKnownPath(args.path)) return;
 		await shell.openPath(args.path);
 	});
 
