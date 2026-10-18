@@ -21,6 +21,9 @@ function baseParams(overrides?: Partial<SecurityScanParams>): SecurityScanParams
 		headerFlags: MH_PIE,
 		encryption: null,
 		loadCommands: [],
+		segmentNames: [],
+		sectionNames: [],
+		debugSymbolCount: 0,
 		...overrides
 	};
 }

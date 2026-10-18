@@ -40,6 +40,7 @@ import { extractLocalisationStrings, readBundleFiles } from "./bundle-files";
 import { extractToCache, getCacheDir } from "./cache";
 import { assembleBinaryList, scanAdditionalBinaries } from "./containers/shared";
 import { convertEntitlements } from "./conversion";
+import { findBundleDebugArtifacts } from "./debug-artifacts";
 import { buildFileTree } from "./file-tree";
 import { detectFileType } from "./file-type";
 import { detectAppFrameworks } from "./framework-detection";
@@ -323,6 +324,15 @@ export class AnalysisSession {
 			errors.push(`Bundle file scan error: ${msg}`);
 		}
 
+		// Step 14c: Flag leaked development artifacts shipped in the bundle
+		let bundleArtifactFindings: SecurityFinding[] = [];
+		try {
+			bundleArtifactFindings = findBundleDebugArtifacts(appBundlePath);
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			errors.push(`Debug artifact scan error: ${msg}`);
+		}
+
 		// Step 14b: Extract localisation strings from .lproj directories
 		let localisationStrings: LocalisationString[] = [];
 		try {
@@ -340,6 +350,7 @@ export class AnalysisSession {
 			findings: [
 				...binaryResult.security.findings,
 				...bundleFindings,
+				...bundleArtifactFindings,
 				...extraBinaryFindings
 			],
 			hardening: binaryResult.security.hardening
@@ -724,6 +735,14 @@ export class AnalysisSession {
 			// Non-critical
 		}
 
+		// Flag leaked development artifacts shipped in the bundle
+		let bundleArtifactFindings: SecurityFinding[] = [];
+		try {
+			bundleArtifactFindings = findBundleDebugArtifacts(bundleRoot);
+		} catch {
+			// Non-critical
+		}
+
 		// Extract localisation strings from .lproj directories
 		let localisationStrings: LocalisationString[] = [];
 		try {
@@ -739,6 +758,7 @@ export class AnalysisSession {
 			findings: [
 				...binaryResult.security.findings,
 				...bundleFindings,
+				...bundleArtifactFindings,
 				...extraBinaryFindings
 			],
 			hardening: binaryResult.security.hardening

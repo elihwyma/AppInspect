@@ -16,6 +16,7 @@ import type {
 } from "../../shared/types";
 
 import { LC_RPATH } from "../parser/load-commands";
+import { checkDebugArtifacts } from "./debug-artifacts";
 
 // ── Constants ──
 
@@ -314,6 +315,9 @@ export interface SecurityScanParams {
 	loadCommands: Array<{ cmd: number; [key: string]: unknown }>;
 	/** Platform from LC_BUILD_VERSION (2 = iOS, 1 = macOS, etc.) */
 	platform?: number;
+	segmentNames: string[];
+	sectionNames: string[];
+	debugSymbolCount: number;
 }
 
 /**
@@ -327,6 +331,14 @@ export function runSecurityScan(params: SecurityScanParams): SecurityFinding[] {
 	findings.push(...checkSecretPatterns(params.strings));
 	findings.push(...checkInsecureAPIs(params.symbols, isIOS));
 	findings.push(...checkJailbreakDetection(params.strings));
+	findings.push(
+		...checkDebugArtifacts({
+			segmentNames: params.segmentNames,
+			sectionNames: params.sectionNames,
+			strings: params.strings,
+			debugSymbolCount: params.debugSymbolCount
+		})
+	);
 
 	return findings;
 }

@@ -38,7 +38,7 @@ import { enrichMethodsFromSymbols, extractObjCMetadata } from "../parser/objc";
 import { extractStrings } from "../parser/strings";
 import { demangleSwiftSymbol, initSwiftDemangler } from "../parser/swift-demangle";
 import type { SymbolEntry as ParserSymbol } from "../parser/symbols";
-import { parseSymbolTable } from "../parser/symbols";
+import { countStabsSymbols, parseSymbolTable } from "../parser/symbols";
 import { buildStringXrefMap, formatFunctionName, parseFunctionStarts } from "../parser/xrefs";
 import {
 	convertEntitlements,
@@ -451,7 +451,10 @@ export async function analyseBinaryFile(
 				headerFlags: header.flags,
 				encryption: encryptionInfo,
 				loadCommands: lcResult.loadCommands.map((lc) => ({ cmd: lc.cmd })),
-				platform: buildVersion?.platform
+				platform: buildVersion?.platform,
+				segmentNames: lcResult.segments.map((s) => s.segname),
+				sectionNames: allSections.map((s) => s.sectname),
+				debugSymbolCount: countStabsSymbols(buffer, lcResult.symtabInfo, machoFile.is64Bit)
 			});
 
 			hardening = getBinaryHardening({

@@ -29,7 +29,7 @@ File type is detected automatically by magic bytes.
 | **Localisation** | Localisation strings from `.lproj` bundles with `.strings` file parsing |
 | **Info.plist** | Full Info.plist contents (IPA only) |
 | **Hooks** | Jailbreak hook framework detection — Substrate, Libhooker, fishhook, Substitute, ObjC swizzling (Mach-O/DEB only) |
-| **Security** | Credential leak scanning, weak crypto, unsafe APIs, dangerous syscalls, jailbreak detection strings, binary hardening assessment (issues only), bundle file scanning (JS bundles, configs) |
+| **Security** | Credential leak scanning, weak crypto, unsafe APIs, dangerous syscalls, jailbreak detection strings, binary hardening assessment (issues only), leaked debug artifacts (DWARF, debug symbols, developer source paths, shipped source maps / Swift module interfaces / symbol maps), bundle file scanning (JS bundles, configs) |
 | **Hex** | Raw hex viewer with virtual scrolling for large binaries. Segment/section region picker, go-to offset, hex/decimal offset toggle. Dual-mode search (hex bytes or text) with match highlighting and navigation |
 | **Files** | Bundle file tree with sizes, context menu (copy path, open file, show in explorer/finder), double-click to open (IPA/DEB) |
 
@@ -42,7 +42,7 @@ File type is detected automatically by magic bytes.
 - **Jailbreak tweak detection** — identifies binaries linking hooking frameworks (Substrate, Libhooker, Substitute, ElleKit) and marks them as tweaks in the dependency graph
 - **FairPlay encryption detection** — warns when a binary is still encrypted (App Store builds)
 - **App framework detection** — identifies cross-platform frameworks (React Native, Expo, Flutter, Cordova, Capacitor, Xamarin/.NET MAUI, Kotlin Multiplatform, NativeScript, Titanium, Qt, Electron) and game engines (Unity, Unreal Engine, Godot, Cocos2d, GameMaker, Solar2D), plus linked system frameworks (SwiftUI, UIKit, ARKit, Metal, SceneKit, SpriteKit, RealityKit, GameKit, AppKit)
-- **Security scan** — 14 credential/secret patterns (AWS, Google/Firebase, OpenAI, Anthropic, Slack, bearer tokens, private keys, database URIs, hardcoded passwords), also checks base64-encoded strings and scans bundle files (JS bundles, JSON configs, plists)
+- **Security scan** — 14 credential/secret patterns (AWS, Google/Firebase, OpenAI, Anthropic, Slack, bearer tokens, private keys, database URIs, hardcoded passwords), also checks base64-encoded strings and scans bundle files (JS bundles, JSON configs, plists). Flags leaked build artifacts: DWARF debug info and retained debug symbols, developer source paths embedded in strings, and shipped source maps / Swift module interfaces / bitcode symbol maps
 - **Function attribution** — security findings show which function references the flagged string (xref analysis for ARM64, ARM32/THUMB, x86_64, and x86, runs lazily only when needed)
 - **JSON export** — export all analysis data or individual tabs, filename derived from the analysed app
 - **Drag-and-drop** — drop files onto the window to start analysis
