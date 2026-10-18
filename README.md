@@ -84,6 +84,7 @@ bun run build:preload    # Preload script (TypeScript → dist/preload/)
 bun run build:renderer   # Renderer bundle (TypeScript → dist/renderer/)
 bun run build:css        # Copy stylesheets to dist/renderer/
 bun run build:mcp        # MCP server (TypeScript → dist/mcp/)
+bun run build:cli        # Standalone CLI (TypeScript → dist/cli/)
 ```
 
 ### Package for distribution
@@ -189,6 +190,52 @@ Subagent B: get_section({ section: "symbols", path: "/tmp/App2.ipa" })
 - Symbol entries include a `demangled` field with the readable name for Swift symbols; the original `name` is preserved as-is
 - Extracted IPA/DEB content is cached in `~/.appinspect/cache/` so re-analysing the same file skips extraction
 - Settings are shared with the desktop app (`~/.appinspect/appinspect-settings.json`), with sensible defaults if no settings file exists
+
+## CLI
+
+AppInspect also ships a standalone command-line entry point for headless and scripted use (CI, batch triage). It runs under Bun with no GUI or Electron, and emits either the full analysis as JSON or the security findings as a [SARIF 2.1.0](https://sarifweb.azurewebsites.net/) report.
+
+### Build
+
+```bash
+bun install
+bun run build:cli        # or: bun run build (builds everything)
+```
+
+### Usage
+
+```bash
+bun run cli -- /path/App.ipa --sarif --out report.sarif --fail-on warning
+bun run cli -- /path/App.ipa --json --section security
+bun run cli -- /path/App.ipa --json --section security --section strings
+bun run cli -- /path/App.ipa --json --no-pretty --out analysis.json
+bun run cli -- /path/App.ipa --binary 1 --json        # analyse a specific binary
+```
+
+`appinspect <file> [options]`
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Emit the full analysis as JSON (default) |
+| `--sarif` | Emit a SARIF 2.1.0 report of the security findings |
+| `--section <name>` | Limit `--json` output to a section (repeatable): `overview`, `strings`, `headers`, `libraries`, `symbols`, `classes`, `entitlements`, `infoPlist`, `hooks`, `security`, `files` |
+| `--binary <index>` | Analyse a specific binary index instead of the main one |
+| `--out <path>` | Write output to a file (default: stdout) |
+| `--pretty` / `--no-pretty` | Pretty-print or minify JSON (default: pretty) |
+| `--fail-on <level>` | Exit 3 when a finding at/above this severity exists: `critical`, `warning`, `info`, or `none` (default: `none`) |
+| `--quiet` | Suppress progress output on stderr |
+| `--version` / `--help` | Print version / usage |
+
+### Output & exit codes
+
+The machine-readable payload goes to stdout (or `--out <path>`); progress goes to stderr and is suppressed by `--quiet`.
+
+| Exit code | Meaning |
+|-----------|---------|
+| `0` | Success, or no findings at/above `--fail-on` |
+| `1` | Analysis failure |
+| `2` | Usage error (unknown flags, missing file) |
+| `3` | A finding at/above `--fail-on` exists |
 
 ## Project structure
 
