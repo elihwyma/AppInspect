@@ -1267,7 +1267,13 @@ export function renderClasses(
 			renderDetail();
 			renderSidebar();
 			const idx = filteredClasses.indexOf(cls);
-			if (idx >= 0) scrollContainer.scrollTop = idx * ROW_HEIGHT;
+			if (idx >= 0) {
+				// Defer so the jump wins over the tab's stored scroll restoration.
+				const top = idx * ROW_HEIGHT;
+				requestAnimationFrame(() => {
+					scrollContainer.scrollTop = top;
+				});
+			}
 			return;
 		}
 	}

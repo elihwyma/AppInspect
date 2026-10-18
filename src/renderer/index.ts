@@ -299,9 +299,63 @@ function updateEncryptionBanner(): void {
 	}
 }
 
+// ── Tab scroll memory ──
+//
+// Panels are shared DOM across file tabs, so each (file tab, section tab)
+// keeps its own scroll offsets and restores them when the tab is shown again.
+
+/** Scrollable containers a tab may use. "" is the panel itself. */
+const SCROLL_SELECTORS: string[] = [
+	"",
+	".dt-scroll",
+	".cls-scroll",
+	".cls-method-scroll",
+	".cls-proto-list",
+	".hv-content"
+];
+
+function scrollerFor(panel: HTMLElement, selector: string): HTMLElement | null {
+	return selector === "" ? panel : panel.querySelector<HTMLElement>(selector);
+}
+
+function captureScroll(panel: HTMLElement): Record<string, number> {
+	const offsets: Record<string, number> = {};
+	for (const selector of SCROLL_SELECTORS) {
+		const scroller = scrollerFor(panel, selector);
+		if (scroller && scroller.scrollTop > 0) offsets[selector] = scroller.scrollTop;
+	}
+	return offsets;
+}
+
+function applyScroll(panel: HTMLElement, offsets: Record<string, number> | undefined): void {
+	for (const selector of SCROLL_SELECTORS) {
+		const scroller = scrollerFor(panel, selector);
+		if (scroller) scroller.scrollTop = offsets?.[selector] ?? 0;
+	}
+}
+
+/** Record the active tab's current scroll before it is hidden or re-rendered. */
+function saveActiveScroll(): void {
+	const tab = getActiveFileTab();
+	if (!tab) return;
+	const panel = document.getElementById(`tab-${tab.currentSectionTab}`);
+	if (panel) tab.scrollOffsets.set(tab.currentSectionTab, captureScroll(panel));
+}
+
+/** Restore a section tab's stored scroll (0 for a not-yet-visited tab). */
+function restoreScroll(tab: FileTabState, tabId: string): void {
+	const panel = document.getElementById(`tab-${tabId}`);
+	if (panel) applyScroll(panel, tab.scrollOffsets.get(tabId));
+}
+
 // ── Section tab switching ──
 function switchSectionTab(tabId: string): void {
 	const tab = getActiveFileTab();
+	const changed = !!tab && tab.currentSectionTab !== tabId;
+
+	// Save the outgoing tab's scroll only when actually leaving it, so a
+	// re-render for a different file can't clobber the incoming tab's state.
+	if (changed) saveActiveScroll();
 	if (tab) tab.currentSectionTab = tabId;
 
 	tabButtons.forEach((btn) => {
@@ -322,6 +376,8 @@ function switchSectionTab(tabId: string): void {
 	// Lazy-load tab data
 	if (tab && tab.analysisResult && !tab.loadedSectionTabs.has(tabId)) {
 		loadTabData(tabId);
+	} else if (changed && tab) {
+		restoreScroll(tab, tabId);
 	}
 }
 
@@ -339,7 +395,7 @@ async function loadTabData(tabId: string): Promise<void> {
 				{ loadCommands: tab.analysisResult.headers.loadCommands },
 				tab.sessionId
 			);
-			panel.scrollTop = 0;
+			restoreScroll(tab, tabId);
 		}
 		return;
 	}
@@ -393,9 +449,7 @@ async function loadTabData(tabId: string): Promise<void> {
 					break;
 			}
 
-			// Panels are shared across file tabs — reset scroll so a freshly loaded
-			// tab doesn't inherit the previous file's scroll position.
-			panel.scrollTop = 0;
+			restoreScroll(tab, tabId);
 		}
 
 		// Auto-focus content if Enter was pressed on the sidebar tab
@@ -458,6 +512,7 @@ function populateBinarySelector(binaries: BinaryInfo[]): void {
 }
 
 function clearAllTabContent(): void {
+	saveActiveScroll();
 	const tab = getActiveFileTab();
 	if (tab) tab.loadedSectionTabs.clear();
 	tabPanels.forEach((panel) => {
@@ -636,6 +691,8 @@ archDropdown.addEventListener("change", handleArchChange);
 function switchFileTab(sessionId: string): void {
 	if (sessionId === activeFileTabId) return;
 
+	// Preserve the outgoing file tab's scroll before its panels are cleared.
+	saveActiveScroll();
 	setActiveFileTabId(sessionId);
 	setActiveTabInBar(sessionId);
 
@@ -729,6 +786,7 @@ async function startAnalysis(filePath: string): Promise<void> {
 	const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
 	const tab = createFileTab(filePath, fileName);
 	addFileTabToBar(filePath, fileName);
+	saveActiveScroll();
 	setActiveFileTabId(filePath);
 	setActiveTabInBar(filePath);
 	setTabLoading(filePath, true);
@@ -772,7 +830,7 @@ async function startAnalysis(filePath: string): Promise<void> {
 					overviewPanel,
 					Object.assign({}, result.overview, { hooks: (result as any).hooks }) as any
 				);
-				overviewPanel.scrollTop = 0;
+				restoreScroll(tab, "overview");
 			}
 
 			checkEncryptionBanner(tab, result);

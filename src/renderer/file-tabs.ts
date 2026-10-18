@@ -17,6 +17,8 @@ export interface FileTabState {
 	currentBinaryIndex: number;
 	currentArchIndex: number;
 	loadedSectionTabs: Set<string>;
+	/** Per-section-tab scroll offsets, keyed by section tab id. */
+	scrollOffsets: Map<string, Record<string, number>>;
 	isEncrypted: boolean;
 	encryptionBannerDismissed: boolean;
 	appState: FileAppState;
@@ -43,6 +45,7 @@ export function createFileTab(sessionId: string, displayName: string): FileTabSt
 		currentBinaryIndex: 0,
 		currentArchIndex: 0,
 		loadedSectionTabs: new Set(),
+		scrollOffsets: new Map(),
 		isEncrypted: false,
 		encryptionBannerDismissed: false,
 		appState: "loading"
