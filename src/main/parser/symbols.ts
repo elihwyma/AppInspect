@@ -144,6 +144,35 @@ export function parseSymbolTable(
 	return symbols;
 }
 
+/**
+ * Count N_STAB (debug) symbols retained in the symbol table without decoding
+ * names. Used to flag builds that were not stripped of debug information.
+ *
+ * @param buffer     The full Mach-O file buffer
+ * @param symtabInfo Offsets / sizes from the LC_SYMTAB load command
+ * @param is64Bit    Whether this is a 64-bit Mach-O (nlist_64 vs nlist)
+ * @returns          Number of STABS entries
+ */
+export function countStabsSymbols(
+	buffer: ArrayBuffer,
+	symtabInfo: SymtabInfo | null,
+	is64Bit: boolean = true
+): number {
+	if (!symtabInfo || symtabInfo.nsyms === 0) return 0;
+
+	const view = new DataView(buffer);
+	const entrySize = is64Bit ? NLIST_64_SIZE : NLIST_32_SIZE;
+	let count = 0;
+
+	for (let i = 0; i < symtabInfo.nsyms; i++) {
+		const entryOffset = symtabInfo.symoff + i * entrySize;
+		if (entryOffset + entrySize > buffer.byteLength) break;
+		if ((view.getUint8(entryOffset + 4) & N_STAB_MASK) !== 0) count++;
+	}
+
+	return count;
+}
+
 // ── Export Trie Parser ────────────────────────────────────────────────
 
 /**

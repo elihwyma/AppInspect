@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { parseExportTrie, parseSymbolTable, readULEB128, type SymtabInfo } from "../symbols";
+import {
+	countStabsSymbols,
+	parseExportTrie,
+	parseSymbolTable,
+	readULEB128,
+	type SymtabInfo
+} from "../symbols";
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -437,5 +443,41 @@ describe("parseSymbolTable (32-bit)", () => {
 		expect(symbols[0]!.type).toBe("exported");
 		expect(symbols[1]!.type).toBe("imported");
 		expect(symbols[2]!.type).toBe("local");
+	});
+});
+
+// ── STABS Counting Tests ──────────────────────────────────────────────
+
+describe("countStabsSymbols", () => {
+	it("returns 0 when symtabInfo is null", () => {
+		expect(countStabsSymbols(new ArrayBuffer(64), null, true)).toBe(0);
+	});
+
+	it("returns 0 when nsyms is 0", () => {
+		const info: SymtabInfo = { symoff: 0, nsyms: 0, stroff: 0, strsize: 0 };
+		expect(countStabsSymbols(new ArrayBuffer(64), info, true)).toBe(0);
+	});
+
+	it("counts STABS entries in a 64-bit symbol table", () => {
+		const { buffer, symtabInfo } = buildSymtabBuffer(
+			[
+				{ n_strx: 1, n_type: 0x24, n_sect: 1, n_desc: 0, n_value: 0x1000n }, // N_FUN (STAB)
+				{ n_strx: 1, n_type: 0x0f, n_sect: 1, n_desc: 0, n_value: 0x2000n }, // exported
+				{ n_strx: 1, n_type: 0x64, n_sect: 0, n_desc: 0, n_value: 0n } // N_SO (STAB)
+			],
+			["_func"]
+		);
+		expect(countStabsSymbols(buffer, symtabInfo, true)).toBe(2);
+	});
+
+	it("counts STABS entries in a 32-bit symbol table", () => {
+		const { buffer, symtabInfo } = buildSymtabBuffer32(
+			[
+				{ n_strx: 1, n_type: 0x24, n_sect: 1, n_desc: 0, n_value: 0x1000 },
+				{ n_strx: 1, n_type: 0x0f, n_sect: 1, n_desc: 0, n_value: 0x2000 }
+			],
+			["_func"]
+		);
+		expect(countStabsSymbols(buffer, symtabInfo, false)).toBe(1);
 	});
 });
