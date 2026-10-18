@@ -723,6 +723,16 @@ body.platform-darwin .app-title-row {
   }
 }
 
+/* ── Copyable (utility) ── */
+.copyable {
+  cursor: pointer;
+  transition: background-color 100ms ease;
+}
+
+.copyable:hover {
+  background-color: var(--accent-light);
+}
+
 /* ── Scrollbar styling ── */
 ::-webkit-scrollbar {
   width: 8px;

@@ -559,12 +559,6 @@
   color: var(--accent-hover);
 }
 
-.cls-sb-btn--copied {
-  background-color: rgba(63, 185, 80, 0.15) !important;
-  color: #3fb950 !important;
-  border-color: rgba(63, 185, 80, 0.4) !important;
-}
-
 .cls-sb-hook-section {
   border-top: 1px solid var(--border);
   padding-top: 14px;

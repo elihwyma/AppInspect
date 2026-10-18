@@ -105,15 +105,6 @@
   user-select: text;
 }
 
-.sec-copyable {
-  cursor: pointer;
-  transition: background-color 100ms ease;
-}
-
-.sec-copyable:hover {
-  background-color: var(--accent-light);
-}
-
 .sec-finding-source {
   font-size: 12px;
   display: flex;
