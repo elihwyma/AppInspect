@@ -25,6 +25,7 @@ import {
 } from "./file-tabs";
 // ── Search state ──
 import { clearSearchStatesForSession, getSearchBar } from "./search-state";
+import { clearTabStatesForSession } from "./tab-state";
 import { renderClasses } from "./tabs/classes";
 import { renderEntitlements } from "./tabs/entitlements";
 import { renderFiles } from "./tabs/files";
@@ -437,7 +438,7 @@ async function loadTabData(tabId: string): Promise<void> {
 					renderClasses(panel, (tabData as any)?.data ?? tabData, binCount, sid);
 					break;
 				case "entitlements":
-					renderEntitlements(panel, (tabData as any)?.data ?? tabData);
+					renderEntitlements(panel, (tabData as any)?.data ?? tabData, sid);
 					break;
 				case "infoplist":
 					renderPlist(panel, (tabData as any)?.data ?? tabData, sid);
@@ -745,6 +746,7 @@ function closeFileTab(sessionId: string): void {
 	removeFileTab(sessionId);
 	removeFileTabFromBar(sessionId);
 	clearSearchStatesForSession(sessionId);
+	clearTabStatesForSession(sessionId);
 	cleanupLibrariesSession(sessionId);
 
 	if (activeFileTabId === null || activeFileTabId === sessionId) {

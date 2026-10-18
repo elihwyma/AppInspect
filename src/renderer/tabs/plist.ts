@@ -238,7 +238,7 @@ export function renderPlist(container: HTMLElement, data: any, sessionId: string
 	treeContainer.className = "plist-tree";
 	container.appendChild(treeContainer);
 
-	const tree = new JsonTree();
+	const tree = new JsonTree({ sessionId, tabId: "plist" });
 	tree.mount(treeContainer);
 	tree.setData(plist);
 

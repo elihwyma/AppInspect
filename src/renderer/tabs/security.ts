@@ -4,6 +4,7 @@
 
 import { SearchBar } from "../components";
 import { getSearchState, registerSearchBar, saveSearchState } from "../search-state";
+import { getTabState, setTabState } from "../tab-state";
 import { makeCopyable } from "../utils/clipboard";
 
 // ── Types ──
@@ -64,7 +65,8 @@ export function renderSecurity(container: HTMLElement, data: any, sessionId: str
 	const hardening = sec.hardening ?? ({} as BinaryHardening);
 
 	// State
-	const activeFilters = new Set<string>(["critical", "warning", "info"]);
+	const savedFilters = getTabState<string[]>(sessionId, "security", "filters");
+	const activeFilters = new Set<string>(savedFilters ?? ["critical", "warning", "info"]);
 	let searchTerm = "";
 	let searchRegex = false;
 
@@ -131,7 +133,9 @@ export function renderSecurity(container: HTMLElement, data: any, sessionId: str
 	const filterButtons: Record<string, HTMLButtonElement> = {};
 	for (const sev of ["critical", "warning", "info"] as const) {
 		const btn = document.createElement("button");
-		btn.className = `sec-filter-btn sec-filter-btn--${sev} sec-filter-btn--active`;
+		btn.className = `sec-filter-btn sec-filter-btn--${sev}${
+			activeFilters.has(sev) ? " sec-filter-btn--active" : ""
+		}`;
 		btn.textContent = SEVERITY_LABELS[sev]!;
 		btn.addEventListener("click", () => {
 			if (activeFilters.has(sev)) {
@@ -141,6 +145,7 @@ export function renderSecurity(container: HTMLElement, data: any, sessionId: str
 				activeFilters.add(sev);
 				btn.classList.add("sec-filter-btn--active");
 			}
+			setTabState(sessionId, "security", "filters", [...activeFilters]);
 			renderFindings();
 		});
 		filterButtons[sev] = btn;

@@ -6,6 +6,7 @@ import type { LoadCommand } from "../../shared/types";
 import { EmptyState, HexViewer } from "../components";
 import type { HexRegion } from "../components/hex-viewer";
 import { registerSearchBar } from "../search-state";
+import { getTabState, setTabState } from "../tab-state";
 import { el } from "../utils/dom";
 
 interface HexTabData {
@@ -168,8 +169,10 @@ export function renderHex(
 		});
 		activeHexViewer.mount(viewerMount);
 		registerSearchBar(sessionId, "hex", { focus: () => activeHexViewer?.focusSearch() });
+		setTabState(sessionId, "hex", "region", index);
 	}
 
-	// Auto-open first region
-	openRegion(0);
+	// Auto-open the previously selected region, or the first one
+	const savedRegion = getTabState<number>(sessionId, "hex", "region") ?? 0;
+	openRegion(Math.min(Math.max(savedRegion, 0), regions.length - 1));
 }

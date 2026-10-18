@@ -35,7 +35,7 @@ File type is detected automatically by magic bytes.
 
 ### Other capabilities
 
-- **Tabbed multi-file sessions** — open multiple files simultaneously in separate tabs, each with independent analysis state
+- **Tabbed multi-file sessions** — open multiple files simultaneously in separate tabs, each with independent analysis state (scroll position, filters, search, and tree expansions are per tab)
 - **Multi-binary switching** — select between main app, frameworks, extensions, or multiple dylibs in a DEB
 - **Cross-binary search** — search classes, strings, symbols, or libraries across all binaries in a container at once
 - **Fat binary architecture selector** — choose which slice to analyse in universal binaries

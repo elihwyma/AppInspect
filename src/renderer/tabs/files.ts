@@ -6,6 +6,7 @@
 import type { FileEntry } from "../../shared/types";
 import { SearchBar } from "../components";
 import { getSearchState, registerSearchBar, saveSearchState } from "../search-state";
+import { getTabState, setTabState } from "../tab-state";
 import { copyText } from "../utils/clipboard";
 
 // ── Helpers ──
@@ -188,7 +189,8 @@ export function renderFiles(container: HTMLElement, data: unknown, sessionId: st
 	container.appendChild(treeEl);
 
 	// Track expanded state by path — all collapsed by default
-	const expandedSet = new Set<string>();
+	const savedExpanded = getTabState<string[]>(sessionId, "files", "expanded");
+	const expandedSet = new Set<string>(savedExpanded ?? []);
 
 	// Track node elements by path for search
 	const nodeMap = new Map<string, HTMLElement>();
@@ -312,6 +314,7 @@ export function renderFiles(container: HTMLElement, data: unknown, sessionId: st
 					childrenEl.classList.add("ft-children-open");
 					toggle.textContent = "\u25BE";
 				}
+				setTabState(sessionId, "files", "expanded", [...expandedSet]);
 			});
 
 			row.style.cursor = "pointer";

@@ -6,6 +6,7 @@
 import type { Column } from "../components";
 import { DataTable, SearchBar } from "../components";
 import { getSearchState, registerSearchBar, saveSearchState } from "../search-state";
+import { getTabState, setTabState } from "../tab-state";
 import {
 	addAllBinariesToggle,
 	binaryTypeBadge,
@@ -109,7 +110,8 @@ export function renderSymbols(
 	});
 
 	// ── Type filter buttons ──
-	let activeType: TypeFilter = "all";
+	const savedType = getTabState<TypeFilter>(sessionId, "symbols", "type");
+	let activeType: TypeFilter = savedType ?? "all";
 
 	const filterBar = document.createElement("div");
 	filterBar.className = "filter-chip-bar";
@@ -125,7 +127,7 @@ export function renderSymbols(
 
 	for (const opt of typeOptions) {
 		const btn = document.createElement("button");
-		btn.className = "filter-chip" + (opt.value === "all" ? " filter-chip--active" : "");
+		btn.className = "filter-chip" + (opt.value === activeType ? " filter-chip--active" : "");
 		btn.textContent = opt.label;
 
 		// Add badge color indicator
@@ -137,6 +139,7 @@ export function renderSymbols(
 
 		btn.addEventListener("click", () => {
 			activeType = opt.value;
+			setTabState(sessionId, "symbols", "type", activeType);
 			for (const [val, b] of typeButtons) {
 				b.classList.toggle("filter-chip--active", val === activeType);
 			}
@@ -234,6 +237,8 @@ export function renderSymbols(
 	if (savedState && savedState.term) {
 		searchBar.setValue(savedState.term, savedState.isRegex);
 	}
+
+	if (activeType !== "all") applyFilters();
 
 	updateCount();
 }

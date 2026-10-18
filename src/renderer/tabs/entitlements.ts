@@ -22,7 +22,11 @@ function classifyKey(key: string): BadgeLevel {
 	return null;
 }
 
-export function renderEntitlements(container: HTMLElement, data: any): void {
+export function renderEntitlements(
+	container: HTMLElement,
+	data: any,
+	sessionId: string = ""
+): void {
 	container.innerHTML = "";
 
 	// data may be { embedded: {...}, profile: {...} } or a flat object
@@ -79,7 +83,7 @@ export function renderEntitlements(container: HTMLElement, data: any): void {
 	}
 
 	// Source sections
-	const renderSource = (label: string, obj: Record<string, unknown>): void => {
+	const renderSource = (label: string, obj: Record<string, unknown>, field: string): void => {
 		if (hasBothSources) {
 			const sourceLabel = document.createElement("div");
 			sourceLabel.className = "ent-source-label";
@@ -91,15 +95,15 @@ export function renderEntitlements(container: HTMLElement, data: any): void {
 		treeContainer.className = "ent-tree";
 		container.appendChild(treeContainer);
 
-		const tree = new JsonTree();
+		const tree = new JsonTree({ sessionId, tabId: "entitlements", field });
 		tree.mount(treeContainer);
 		tree.setData(obj);
 	};
 
 	if (hasBothSources) {
-		renderSource("Embedded (Code Signature)", embedded!);
-		renderSource("Provisioning Profile", profile!);
+		renderSource("Embedded (Code Signature)", embedded!, "embedded");
+		renderSource("Provisioning Profile", profile!, "profile");
 	} else {
-		renderSource("Entitlements", flat);
+		renderSource("Entitlements", flat, "entitlements");
 	}
 }

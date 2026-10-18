@@ -7,6 +7,7 @@
 import type { Column } from "../components";
 import { DataTable, SearchBar } from "../components";
 import { getSearchState, registerSearchBar, saveSearchState } from "../search-state";
+import { getTabState, setTabState } from "../tab-state";
 import {
 	addAllBinariesToggle,
 	binaryTypeBadge,
@@ -89,7 +90,8 @@ export function renderStrings(
 	}));
 
 	// ── State ──
-	let mode: "binary" | "localisation" = "binary";
+	const savedMode = getTabState<"binary" | "localisation">(sessionId, "strings", "mode");
+	let mode: "binary" | "localisation" = savedMode ?? "binary";
 
 	// Collect unique sections for binary filter chips
 	const sectionSet = new Set<string>();
@@ -97,7 +99,8 @@ export function renderStrings(
 		if (r.source) sectionSet.add(r.source);
 	}
 	const sections = [...sectionSet].sort();
-	const activeSections = new Set<string>(sections);
+	const savedSections = getTabState<string[]>(sessionId, "strings", "sections");
+	const activeSections = new Set<string>(savedSections ?? sections);
 
 	// Collect unique languages for localisation filter chips
 	const langSet = new Set<string>();
@@ -107,7 +110,10 @@ export function renderStrings(
 	const languages = [...langSet].sort();
 	// Default to English if available, otherwise show all
 	const englishLang = languages.find((l) => /^(en|en[-_]|english|base)$/i.test(l));
-	const activeLanguages = new Set<string>(englishLang ? [englishLang] : languages);
+	const savedLanguages = getTabState<string[]>(sessionId, "strings", "languages");
+	const activeLanguages = new Set<string>(
+		savedLanguages ?? (englishLang ? [englishLang] : languages)
+	);
 
 	// ── Wrapper ──
 	const wrapper = document.createElement("div");
@@ -124,12 +130,14 @@ export function renderStrings(
 		toggleBar.className = "strings-mode-toggle";
 
 		binaryBtn = document.createElement("button");
-		binaryBtn.className = "strings-mode-btn strings-mode-btn--active";
+		binaryBtn.className =
+			"strings-mode-btn" + (mode === "binary" ? " strings-mode-btn--active" : "");
 		binaryBtn.textContent = "Binary";
 		binaryBtn.addEventListener("click", () => switchMode("binary"));
 
 		localisationBtn = document.createElement("button");
-		localisationBtn.className = "strings-mode-btn";
+		localisationBtn.className =
+			"strings-mode-btn" + (mode === "localisation" ? " strings-mode-btn--active" : "");
 		localisationBtn.textContent = "Localisations";
 		localisationBtn.addEventListener("click", () => switchMode("localisation"));
 
@@ -252,6 +260,7 @@ export function renderStrings(
 						activeSections.add(section);
 						chip.classList.add("filter-chip--active");
 					}
+					setTabState(sessionId, "strings", "sections", [...activeSections]);
 					applyFilters();
 				});
 				chipBar.appendChild(chip);
@@ -270,6 +279,7 @@ export function renderStrings(
 						activeLanguages.add(lang);
 						chip.classList.add("filter-chip--active");
 					}
+					setTabState(sessionId, "strings", "languages", [...activeLanguages]);
 					applyFilters();
 				});
 				chipBar.appendChild(chip);
@@ -318,6 +328,7 @@ export function renderStrings(
 	function switchMode(newMode: "binary" | "localisation"): void {
 		if (newMode === mode) return;
 		mode = newMode;
+		setTabState(sessionId, "strings", "mode", mode);
 
 		if (binaryBtn && localisationBtn) {
 			binaryBtn.classList.toggle("strings-mode-btn--active", mode === "binary");
@@ -339,8 +350,12 @@ export function renderStrings(
 
 	// Append to DOM first so the table has real dimensions for virtual scrolling
 	container.appendChild(wrapper);
+	if (mode === "localisation") {
+		table.setColumns(LOCALISATION_COLUMNS);
+		table.setStorageKey("cols:strings:localisation");
+	}
 	buildChips();
-	table.setData(binaryRows);
+	table.setData(mode === "binary" ? binaryRows : localisationRows);
 
 	// Restore saved search state (must happen after table is created)
 	const savedState = getSearchState(sessionId, "strings");
@@ -348,5 +363,9 @@ export function renderStrings(
 		searchBar.setValue(savedState.term, savedState.isRegex);
 	}
 
-	updateCount();
+	if (savedSections !== undefined || savedLanguages !== undefined) {
+		applyFilters();
+	} else {
+		updateCount();
+	}
 }
