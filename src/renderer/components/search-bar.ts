@@ -3,6 +3,8 @@
  * inline regex error feedback, and result count display.
  */
 
+import { compileSafeRegex, isPotentiallyUnsafeRegex } from "../../shared/safe-regex";
+
 export class SearchBar {
 	private onFilter: (term: string, isRegex: boolean, caseSensitive: boolean) => void;
 	private container: HTMLElement | null = null;
@@ -127,15 +129,18 @@ export class SearchBar {
 
 		// Validate regex if in regex mode
 		if (this.regexMode && term) {
-			try {
-				new RegExp(term);
-				this.input?.classList.remove("sb-invalid");
-				this.setError(null);
-			} catch {
+			if (isPotentiallyUnsafeRegex(term)) {
+				this.input?.classList.add("sb-invalid");
+				this.setError("Pattern too complex");
+				return;
+			}
+			if (compileSafeRegex(term) === null) {
 				this.input?.classList.add("sb-invalid");
 				this.setError("Invalid regex");
-				return; // Don't filter with invalid regex
+				return;
 			}
+			this.input?.classList.remove("sb-invalid");
+			this.setError(null);
 		} else {
 			this.input?.classList.remove("sb-invalid");
 			this.setError(null);

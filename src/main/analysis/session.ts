@@ -10,6 +10,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { compileSafeRegex } from "../../shared/safe-regex";
 import type {
 	AnalysisResult,
 	LibraryGraphData,
@@ -204,7 +205,8 @@ export class AnalysisSession {
 		let matcher: (value: string) => boolean;
 		if (isRegex) {
 			const flags = caseSensitive ? "" : "i";
-			const re = new RegExp(query, flags);
+			const re = compileSafeRegex(query, flags);
+			if (!re) return [];
 			matcher = (value) => re.test(value);
 		} else if (caseSensitive) {
 			matcher = (value) => value.includes(query);
