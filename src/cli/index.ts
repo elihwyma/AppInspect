@@ -40,6 +40,7 @@ export interface CliOptions {
 	sections?: TabName[];
 	binary?: number;
 	out?: string;
+	noClobber: boolean;
 	pretty: boolean;
 	failOn: FailOn;
 	quiet: boolean;
@@ -60,7 +61,8 @@ Options:
                         overview|strings|headers|libraries|symbols|classes|
                         entitlements|infoPlist|hooks|security|files
   --binary <index>      Analyse a specific binary index instead of the main one
-  --out <path>          Write output to a file (default: stdout)
+  --out <path>          Write output to a file (overwrites if it exists; default: stdout)
+  --no-clobber          Refuse to overwrite an existing --out file
   --pretty              Pretty-print JSON (default)
   --no-pretty           Minify JSON
   --fail-on <level>     Exit 3 when a finding at/above this severity exists:
@@ -73,6 +75,7 @@ Options:
 export function parseArgs(argv: string[]): CliOptions {
 	const options: CliOptions = {
 		format: "json",
+		noClobber: false,
 		pretty: true,
 		failOn: "none",
 		quiet: false,
@@ -128,6 +131,9 @@ export function parseArgs(argv: string[]): CliOptions {
 				options.out = value;
 				break;
 			}
+			case "--no-clobber":
+				options.noClobber = true;
+				break;
 			case "--fail-on": {
 				const value = argv[++i];
 				if (!value || !FAIL_ON_LEVELS.includes(value as FailOn)) {
@@ -211,6 +217,10 @@ async function main(argv: string[]): Promise<number> {
 
 	const text = `${output}\n`;
 	if (options.out) {
+		if (options.noClobber && fs.existsSync(options.out)) {
+			process.stderr.write(`error: refusing to overwrite existing file: ${options.out}\n`);
+			return 1;
+		}
 		fs.writeFileSync(options.out, text);
 	} else {
 		process.stdout.write(text);

@@ -220,7 +220,8 @@ bun run cli -- /path/App.ipa --binary 1 --json        # analyse a specific binar
 | `--sarif` | Emit a SARIF 2.1.0 report of the security findings |
 | `--section <name>` | Limit `--json` output to a section (repeatable): `overview`, `strings`, `headers`, `libraries`, `symbols`, `classes`, `entitlements`, `infoPlist`, `hooks`, `security`, `files` |
 | `--binary <index>` | Analyse a specific binary index instead of the main one |
-| `--out <path>` | Write output to a file (default: stdout) |
+| `--out <path>` | Write output to a file (overwrites an existing file; default: stdout) |
+| `--no-clobber` | Refuse to overwrite an existing `--out` file (exits 1) |
 | `--pretty` / `--no-pretty` | Pretty-print or minify JSON (default: pretty) |
 | `--fail-on <level>` | Exit 3 when a finding at/above this severity exists: `critical`, `warning`, `info`, or `none` (default: `none`) |
 | `--quiet` | Suppress progress output on stderr |

@@ -69,6 +69,14 @@ describe("parseArgs", () => {
 		expect(() => parseArgs(["/tmp/App.ipa", "/tmp/Other.ipa"])).toThrow(UsageError);
 	});
 
+	it("defaults noClobber to false", () => {
+		expect(parseArgs(["x"]).noClobber).toBe(false);
+	});
+
+	it("parses --no-clobber", () => {
+		expect(parseArgs(["--no-clobber", "x"]).noClobber).toBe(true);
+	});
+
 	it("supports --help and --version without a file", () => {
 		expect(parseArgs(["--help"]).help).toBe(true);
 		expect(parseArgs(["--version"]).version).toBe(true);
