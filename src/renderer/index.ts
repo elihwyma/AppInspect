@@ -339,6 +339,7 @@ async function loadTabData(tabId: string): Promise<void> {
 				{ loadCommands: tab.analysisResult.headers.loadCommands },
 				tab.sessionId
 			);
+			panel.scrollTop = 0;
 		}
 		return;
 	}
@@ -391,6 +392,10 @@ async function loadTabData(tabId: string): Promise<void> {
 				default:
 					break;
 			}
+
+			// Panels are shared across file tabs — reset scroll so a freshly loaded
+			// tab doesn't inherit the previous file's scroll position.
+			panel.scrollTop = 0;
 		}
 
 		// Auto-focus content if Enter was pressed on the sidebar tab
@@ -767,6 +772,7 @@ async function startAnalysis(filePath: string): Promise<void> {
 					overviewPanel,
 					Object.assign({}, result.overview, { hooks: (result as any).hooks }) as any
 				);
+				overviewPanel.scrollTop = 0;
 			}
 
 			checkEncryptionBanner(tab, result);
