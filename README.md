@@ -23,7 +23,7 @@ File type is detected automatically by magic bytes.
 | **Strings** | All embedded strings with section attribution and file offsets |
 | **Headers** | Mach-O header fields, fat architecture list, full load command dump |
 | **Libraries** | Linked frameworks and dylibs with version info and weak-linking flags. Interactive force-directed dependency graph view showing inter-binary relationships, with pan/zoom, node dragging, and category filtering |
-| **Symbols** | Exported, imported, and local symbols with addresses |
+| **Symbols** | Exported, imported, and local symbols with addresses. Swift symbols are demangled for display; the raw name stays searchable |
 | **Classes** | ObjC class names and methods with decoded type signatures, protocol conformances per class, protocol detail view (required/optional instance/class methods), Logos hook generation, back/forward navigation history |
 | **Entitlements** | Code signature entitlements or provisioning profile fallback |
 | **Localisation** | Localisation strings from `.lproj` bundles with `.strings` file parsing |
@@ -186,6 +186,7 @@ Subagent B: get_section({ section: "symbols", path: "/tmp/App2.ipa" })
 - All analysis runs locally, offline, with no network requests
 - The app does not need to be open — the MCP server is fully standalone
 - Large sections (strings, symbols, classes, libraries) support pagination via `offset` and `limit` (default: 200 items) and text filtering via `filter`
+- Symbol entries include a `demangled` field with the readable name for Swift symbols; the original `name` is preserved as-is
 - Extracted IPA/DEB content is cached in `~/.appinspect/cache/` so re-analysing the same file skips extraction
 - Settings are shared with the desktop app (`~/.appinspect/appinspect-settings.json`), with sensible defaults if no settings file exists
 
@@ -241,3 +242,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
 - **fflate** — ZIP decompression (IPA extraction)
 - **bplist-parser** / **plist** — binary and XML plist parsing
 - **@modelcontextprotocol/sdk** — MCP server for AI agent integration
+- **swift-demangle-wasm** — Swift symbol demangling (WebAssembly)
