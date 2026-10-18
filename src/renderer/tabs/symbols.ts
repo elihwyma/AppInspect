@@ -17,6 +17,7 @@ import {
 
 interface SymbolEntry {
 	name: string;
+	demangled?: string;
 	type: "exported" | "imported" | "local";
 	address: string | number;
 }
@@ -54,7 +55,8 @@ export function renderSymbols(
 					? "0x" + e.address
 					: String(e.address ?? "0x0");
 		return {
-			name: e.name ?? "",
+			name: e.demangled ?? e.name ?? "",
+			nameRaw: e.name ?? "",
 			type: e.type ?? "local",
 			addressHex: addr
 		};
@@ -205,17 +207,20 @@ export function renderSymbols(
 			// Type filter
 			if (activeType !== "all" && row["type"] !== activeType) return false;
 
-			// Text/regex filter
+			// Text/regex filter — match the displayed and raw name
 			if (!searchTerm) return true;
 			const name = String(row["name"] ?? "");
+			const nameRaw = String(row["nameRaw"] ?? "");
 			if (searchRegex) {
 				try {
-					return new RegExp(searchTerm, "i").test(name);
+					const re = new RegExp(searchTerm, "i");
+					return re.test(name) || re.test(nameRaw);
 				} catch {
 					return true;
 				}
 			}
-			return name.toLowerCase().includes(searchTerm.toLowerCase());
+			const lower = searchTerm.toLowerCase();
+			return name.toLowerCase().includes(lower) || nameRaw.toLowerCase().includes(lower);
 		});
 		updateCount();
 	}
