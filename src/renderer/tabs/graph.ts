@@ -8,10 +8,11 @@
 
 import type { LibraryGraphData, LibraryGraphEdge, LibraryGraphNode } from "../../shared/types";
 import { el } from "../utils/dom";
+import { buildTooltipFragment } from "./graph-tooltip";
 
 // ── Internal layout node ──
 
-interface LayoutNode extends LibraryGraphNode {
+export interface LayoutNode extends LibraryGraphNode {
 	x: number;
 	y: number;
 	vx: number;
@@ -584,16 +585,7 @@ class GraphRenderer {
 	}
 
 	private showTooltip(nd: LayoutNode): void {
-		const lines: string[] = [];
-		if (nd.type === "binary") {
-			lines.push(`<strong>${nd.label}</strong>`);
-			lines.push(`${nd.binaryType ?? "binary"}`);
-		} else {
-			lines.push(`<strong>${nd.id.replace(/\//g, "/<wbr>")}</strong>`);
-			if (nd.version) lines.push(`Version: ${nd.version}`);
-			lines.push(`Type: ${nd.category ?? "unknown"}${nd.weak ? " (weak)" : ""}`);
-		}
-		this.tooltip.innerHTML = lines.join("<br>");
+		this.tooltip.replaceChildren(buildTooltipFragment(nd, document));
 		this.tooltip.classList.remove("hidden");
 
 		// Position next to the node using its rendered bounding rect.
