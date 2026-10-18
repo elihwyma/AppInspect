@@ -1544,6 +1544,36 @@ body.platform-darwin .app-title-row {
   border-radius: 6px;
 }
 
+.plist-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 4px 24px;
+  width: 100%;
+}
+
+.plist-fact {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.plist-fact-label {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 110px;
+}
+
+.plist-fact-value {
+  color: var(--text);
+  word-break: break-all;
+}
+
+.plist-fact-value--mono {
+  font-family: "SF Mono", "Cascadia Code", "Consolas", monospace;
+}
+
 .plist-chip-group {
   display: flex;
   flex-wrap: wrap;
@@ -1574,6 +1604,12 @@ body.platform-darwin .app-title-row {
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.plist-chip--warn {
+  background-color: rgba(210, 153, 34, 0.18);
+  color: #d29922;
+  border-color: #d29922;
 }
 
 .plist-search {
