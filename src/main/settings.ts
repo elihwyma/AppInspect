@@ -23,14 +23,38 @@ try {
 	userDataDir = path.join(os.homedir(), ".appinspect");
 }
 
+const LIMITS = {
+	maxBundleSizeMB: { min: 1, max: 2000 },
+	maxFileSizeMB: { min: 1, max: 500 }
+} as const;
+
 function getSettingsPath(): string {
 	return path.join(userDataDir, "appinspect-settings.json");
+}
+
+/** Keep only known keys with valid values; drop everything else. */
+export function sanitizeSettings(input: unknown): Partial<AppSettings> {
+	if (typeof input !== "object" || input === null) return {};
+	const raw = input as Record<string, unknown>;
+	const out: Partial<AppSettings> = {};
+
+	if (typeof raw.scanAllBinaries === "boolean") out.scanAllBinaries = raw.scanAllBinaries;
+
+	for (const key of ["maxBundleSizeMB", "maxFileSizeMB"] as const) {
+		const value = raw[key];
+		if (value === undefined) continue;
+		const n = Number(value);
+		if (!Number.isFinite(n)) continue;
+		out[key] = Math.min(Math.max(n, LIMITS[key].min), LIMITS[key].max);
+	}
+
+	return out;
 }
 
 export function loadSettings(): AppSettings {
 	try {
 		const raw = fs.readFileSync(getSettingsPath(), "utf-8");
-		return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+		return { ...DEFAULT_SETTINGS, ...sanitizeSettings(JSON.parse(raw)) };
 	} catch {
 		return { ...DEFAULT_SETTINGS };
 	}
@@ -43,6 +67,6 @@ export function saveSettings(settings: AppSettings): void {
 	// Merge on top of current disk state to avoid clobbering
 	// another instance's concurrent writes
 	const current = loadSettings();
-	const merged = { ...current, ...settings };
+	const merged = { ...current, ...sanitizeSettings(settings) };
 	fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2), "utf-8");
 }
