@@ -1,5 +1,6 @@
 {
   "name": "appinspect",
+  "productName": "AppInspect",
   "version": "0.1.0",
   "description": "IPA reverse engineering desktop app",
   "main": "dist/main/index.js",
